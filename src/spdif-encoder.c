@@ -63,10 +63,8 @@ static uint16_t spdif_preamble_encode(int last, uint8_t data){
 static void spdif_fast_encode(struct spdif_encoder *spdif,
 			      void *encoded_buf, uint32_t subframe)
 {
-	uint8_t *bytes= (uint8_t *)&subframe;
 	uint32_t parity;
-	uint16_t data;
-	uint16_t *encoded= (uint16_t *)encoded_buf;
+	uint32_t *encoded = (uint32_t *)encoded_buf;
 
 	parity = subframe & ~SPDIF_PREAMBLE_MASK; /* exclude preamble bits */	
 	parity ^= parity >> 16; /* slightly faster than calling __builtin_parity() */
@@ -76,34 +74,33 @@ static void spdif_fast_encode(struct spdif_encoder *spdif,
 	parity =  0x69960000 << parity;
 	parity &= 0x80000000;
 	subframe |= parity;
+	int last = spdif->last;
 
-	data= spdif->first_byte[bytes[0]];
-	if( spdif->last ){
-		data^= 0xffff;
+	uint32_t data1 = spdif->first_byte[subframe & 0xff];
+	if(last){
+		data1^= 0xffff;
 	}
-	spdif->last= data&1;
-	encoded[1]=data;
+	last = data1&1;
 
-	data= spdif->byte[bytes[1]];
-	if( spdif->last ){
-		data^= 0xffff;
+	uint32_t data0 = spdif->byte[(subframe >> 8) & 0xff];
+	if(last){
+		data0^= 0xffff;
 	}
-	spdif->last= data&1;
-	encoded[0]=data;
+	last= data0&1;
+        encoded[0] = data1 << 16 | data0;
 
-	data= spdif->byte[bytes[2]];
-	if( spdif->last ){
-		data^= 0xffff;
+	data1 = spdif->byte[(subframe >> 16) & 0xff];
+	if(last){
+		data1^= 0xffff;
 	}
-	spdif->last= data&1;
-	encoded[3]=data;
+	last = data1&1;
 
-	data= spdif->byte[bytes[3]];
-	if( spdif->last ){
-		data^= 0xffff;
+	data0 = spdif->byte[(subframe >> 24) & 0xff];
+	if(last){
+		data0^= 0xffff;
 	}
-	spdif->last= data&1;
-	encoded[2]=data;
+	spdif->last= data0&1;
+	encoded[1] = data1 << 16 | data0;
 }
 
 
