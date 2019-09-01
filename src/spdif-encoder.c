@@ -3,8 +3,9 @@
  */
 
 #include "spdif-encoder.h"
+#include <stdbool.h>
 
-static uint16_t spdif_biphase_encode(int last, uint8_t data){
+static uint16_t spdif_biphase_encode(bool last, uint8_t data){
 	int i;
 	uint16_t result=0;
 
@@ -24,7 +25,7 @@ static uint16_t spdif_biphase_encode(int last, uint8_t data){
 	return result;
 }
 
-static uint16_t spdif_preamble_encode(int last, uint8_t data){
+static uint16_t spdif_preamble_encode(bool last, uint8_t data){
 
 	uint16_t result=0;
 	int i;
@@ -60,13 +61,18 @@ static uint16_t spdif_preamble_encode(int last, uint8_t data){
 	return result;
 }
 
-static void spdif_fast_encode(struct spdif_encoder *spdif,
-			      void *encoded_buf, uint32_t subframe)
+void spdif_fast_encode(struct spdif_encoder *spdif,
+		       void *encoded_buf, uint32_t subframe)
 {
 	uint32_t parity;
 	uint32_t *encoded = (uint32_t *)encoded_buf;
 
-	parity = subframe & ~SPDIF_PREAMBLE_MASK; /* exclude preamble bits */	
+	/* add channel status bit */
+	if((spdif->channel_status[spdif->frame_ctr / 8] >> (spdif->frame_ctr % 8)) & 0x01)
+	{
+		subframe |= SPDIF_C_MASK;
+	}
+	parity = subframe & ~SPDIF_PREAMBLE_MASK; /* exclude preamble bits */
 	parity ^= parity >> 16; /* slightly faster than calling __builtin_parity() */
 	parity ^= parity >>  8;
 	parity ^= parity >>  4;
@@ -74,7 +80,7 @@ static void spdif_fast_encode(struct spdif_encoder *spdif,
 	parity =  0x69960000 << parity;
 	parity &= 0x80000000;
 	subframe |= parity;
-	int last = spdif->last;
+	bool last = spdif->last;
 
 	uint32_t data1 = spdif->first_byte[subframe & 0xff];
 	if(last){
@@ -127,7 +133,16 @@ void spdif_encoder_init(struct spdif_encoder *spdif){
 		spdif->first_byte[i]= spdif_preamble_encode(0, i);
 		spdif->byte[i]= spdif_biphase_encode(0, i);
 	}
+	spdif_encoder_set_channel_status(spdif, NULL, 0);
 }
+
+void spdif_encoder_set_channel_status(struct spdif_encoder *spdif,
+                                      const void *cs, size_t len)
+{
+    memset(spdif->channel_status, 0, SPDIF_CHSTATSIZE);
+    memcpy(spdif->channel_status, cs, len <= SPDIF_CHSTATSIZE ? len : SPDIF_CHSTATSIZE);
+}
+
 
 /* end of SPDIF encoder */
 
