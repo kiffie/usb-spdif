@@ -17,7 +17,8 @@
 
 #define PCM_FSAMPLE 48000
 #define PCM_CHANNELS 2
-#define USB_AUDIO_ISO_EP_SIZE (2*PCM_FSAMPLE*PCM_CHANNELS/1000)
+#define PCM_SUBFRAMESIZE 4
+#define USB_AUDIO_ISO_EP_SIZE (PCM_SUBFRAMESIZE*PCM_FSAMPLE*PCM_CHANNELS/1000)
 
 
 typedef void (*usb_audio_data_cb_t)(uint8_t ep_addr, void *data, unsigned len);

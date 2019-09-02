@@ -9,7 +9,7 @@
 /* USB device stack */
 #include <usb_audio.h>
 
-#include "spdif_out.h"
+#include <spdif_out.h>
 
 #include <mips_irq.h>
 #include <terminal.h>
@@ -38,11 +38,19 @@ int main(void)
     RPB0R = 0b0010; /* U2TX for terminal (debug) output */
 #else
     TRISBCLR = _TRISB_TRISB4_MASK; /* LED */
+    ANSELBCLR = 1 << 15; /* SCK2 */
     RPB0R= 0b0010; /* U2TX for terminal (debug) output */
+    RPB2R = 0b0111; /* REFCLKO */
 #endif
     term_init();
     timer_init();
     log_info("USB S/PDIF Interface\n");
+    log_info("Fixed sampling rate: %u Hz\n", PCM_FSAMPLE);
+#ifdef SPDIF_REFCLKWIRE
+    log_info("Reference clock wire: required\n");
+#else
+    log_info("Reference clock wire: not required\n");
+#endif
 #ifdef __32MX470F512H__
     log_debug("BMXCON = %08x\n", BMXCON);
     log_debug("CHECON = %08x\n", CHECON);
@@ -61,7 +69,13 @@ int main(void)
 }
 
 static void usb_device_data_handler(uint8_t ep_addr, void *data, unsigned len){
+#if PCM_SUBFRAMESIZE == 2
     spdif_out_tx_s16le(data, len/4);
+#elif PCM_SUBFRAMESIZE == 4
+    spdif_out_tx_s24le(data, len/8);
+#else
+    #error "invalid PCM_SUBFRAMESIZE"
+#endif
 }
 
 
@@ -81,7 +95,7 @@ void __attribute__((noinline, nomips16)) _nmi_handler(void){
     mips_di();
     SYSKEY = 0x00000000;
     SYSKEY = 0xAA996655;
-    SYSKEY = 0x556699AA; 
+    SYSKEY = 0x556699AA;
     RSWRSTSET = _RSWRST_SWRST_MASK;
     dummy = RSWRST;
     (void)dummy;

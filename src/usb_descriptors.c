@@ -132,8 +132,12 @@ static const uint8_t usb_config_desc[] = {
     0x02,                            // FORMAT_TYPE subtype. (bDescriptorSubtype)
     0x01,                            // FORMAT_TYPE_1. (bFormatType)
     PCM_CHANNELS,                    // bNrChannels
-    0x02,                            // bSubFrameSize
-    0x10,                            // bBitResolution
+    PCM_SUBFRAMESIZE,                // bSubFrameSize
+#if PCM_SUBFRAMESIZE == 2
+    16,                              // bBitResolution
+#elif PCM_SUBFRAMESIZE == 4
+    24,                              // bBitResolution
+#endif
     0x01,                            // bSamFreqType
     BYTE0(PCM_FSAMPLE),              // tSamFreq
     BYTE1(PCM_FSAMPLE),
