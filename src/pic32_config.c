@@ -2,17 +2,21 @@
  * configuration registers
  */
 
-#if defined( __32MX250F128B__) || defined(__32MX270F256B__) || defined(__32MX270F256D__) || defined(__32MX470F512H__)
+#if defined( __32MX250F128B__) || defined(__32MX270F256B__) || defined(__32MX270F256D__) || defined(__32MX470F512H__) || defined(__32MX274F256B__)
 
 #pragma config JTAGEN = OFF         // JTAG Enable
 
 #pragma config ICESEL = ICS_PGx3        // ICE/ICD Comm Channel Select
 //#pragma config DEBUG = ON
 
-#pragma config FUSBIDIO = ON            // USB USID Selection
-#pragma config FVBUSONIO = ON           // USB VBUS ON Selection
+//#pragma config FUSBIDIO = ON            // USB USID Selection
+//#pragma config FVBUSONIO = ON           // USB VBUS ON Selection
 
-#pragma config FNOSC    = PRIPLL        // Oscillator Selection
+#ifdef __32MX274F256B__
+    #pragma config FNOSC    = SPLL      // Oscillator Selection
+#else
+    #pragma config FNOSC    = PRIPLL    // Oscillator Selection
+#endif
 #pragma config POSCMOD  = XT            // Primary Oscillator
 #pragma config OSCIOFNC = OFF           // CLKO Output Signal Active on the OSCO Pin
 #pragma config FSOSCEN  = OFF           // Secondary Oscillator Enable

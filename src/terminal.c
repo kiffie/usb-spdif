@@ -20,7 +20,7 @@
 #endif
 
 #ifndef TERM_IPL
-#define TERM_IPL 7
+#define TERM_IPL 1
 #endif
 #define TERM_IPL_TAG_STR(ipl_str) IPL ## ipl_str ## SOFT
 #define TERM_IPL_TAG(ipl) TERM_IPL_TAG_STR(ipl)
@@ -50,7 +50,7 @@
 #   define UxTXREG	U2TXREG
 #   define UxBRG	U2BRG
 #   define UxVECTOR     _UART_2_VECTOR
-#   if __PIC32_FEATURE_SET == 250 || __PIC32_FEATURE_SET == 270 || __PIC32_FEATURE_SET == 470
+#   if __PIC32_FEATURE_SET == 250 || __PIC32_FEATURE_SET == 274 || __PIC32_FEATURE_SET == 470
 #       define UxIPC        IPC9bits.U2IP
 #       define UxTX_IFSCLR  IFS1CLR = _IFS1_U2TXIF_MASK
 #       define UxTXIE       IEC1SET = _IEC1_U2TXIE_MASK

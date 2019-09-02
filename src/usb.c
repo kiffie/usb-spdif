@@ -611,7 +611,7 @@ void usb_init_with_desc(const usb9_device_descriptor_t *device_desc,
 
 #if defined( __32MX440F256H__)
     IPC11bits.USBIP = 4;
-#elif defined(__32MX470F512H__) || defined(__32MX250F128B__) || defined(__32MX270F256D__)
+#elif defined(__32MX470F512H__) || defined(__32MX250F128B__) || defined(__32MX270F256D__) || defined(__32MX274F256B__)
     IPC7bits.USBIP = 4;
 #else
     #error MCU type not supported
