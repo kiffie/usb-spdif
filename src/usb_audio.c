@@ -4,6 +4,7 @@
 
 #include <usb_audio.h>
 #include <usb.h>
+#include <string.h>
 
 #include <logger.h>
 
@@ -49,22 +50,17 @@
 
 static struct {
     uint8_t mute;
-    //uint16_t volume[2];
     uint8_t audio_data[2][USB_AUDIO_ISO_EP_SIZE] __attribute__ ((aligned (4)));;
     usb_audio_data_cb_t rx_callback;
-    
-
 } usb_audio;
 
 
-static void usb_audio_data_cb(unsigned ep, unsigned pid, void *buffer, unsigned len){
-    
-//     if(ep == 0x01 && len == 192){
-//         log_debug("+");
-//     }else{
-//         log_debug("-");
-//     }
+static void usb_audio_data_cb(unsigned ep, unsigned pid, void *buffer, unsigned len)
+{
     if(usb_audio.rx_callback != NULL){
+        if(usb_audio.mute){
+            memset(buffer, 0, len);
+        }
         usb_audio.rx_callback(0x01, buffer, len);
     }
     usb_arm_endpoint(0x01, buffer, USB_AUDIO_ISO_EP_SIZE);
@@ -72,7 +68,7 @@ static void usb_audio_data_cb(unsigned ep, unsigned pid, void *buffer, unsigned 
 
 
 static int usb_audio_class_cb(usb9_setup_data_t *sudata, void **inout_data){
-    
+
     int xfer_len = -1;
     log_debug("Class request: bmRequestType=%02x, bRequest=%02x, "
             "wValue=%04x, wIndex=%04x, wLength=%u\n",
