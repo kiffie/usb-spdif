@@ -78,8 +78,8 @@
 #define IRMP_SUPPORT_NEC42_PROTOCOL             0       // NEC42                >= 10000                 ~300 bytes
 #define IRMP_SUPPORT_MATSUSHITA_PROTOCOL        0       // Matsushita           >= 10000                  ~50 bytes
 #define IRMP_SUPPORT_DENON_PROTOCOL             0       // DENON, Sharp         >= 10000                 ~250 bytes
-#define IRMP_SUPPORT_RC5_PROTOCOL               0       // RC5                  >= 10000                 ~250 bytes
-#define IRMP_SUPPORT_RC6_PROTOCOL               0       // RC6 & RC6A           >= 10000                 ~250 bytes
+#define IRMP_SUPPORT_RC5_PROTOCOL               1       // RC5                  >= 10000                 ~250 bytes
+#define IRMP_SUPPORT_RC6_PROTOCOL               1       // RC6 & RC6A           >= 10000                 ~250 bytes
 #define IRMP_SUPPORT_IR60_PROTOCOL              0       // IR60 (SDA2008)       >= 10000                 ~300 bytes
 #define IRMP_SUPPORT_GRUNDIG_PROTOCOL           0       // Grundig              >= 10000                 ~300 bytes
 #define IRMP_SUPPORT_SIEMENS_PROTOCOL           0       // Siemens Gigaset      >= 15000                 ~550 bytes
@@ -142,6 +142,14 @@
 #  else
 #    define IRMP_PIN                            PORTBbits.RB4           // PIC C18
 #  endif
+
+/*---------------------------------------------------------------------------------------------------------------------------------------------------
+ * Change hardware pin here for PIC XC32 or ChipKIT compiler
+ *---------------------------------------------------------------------------------------------------------------------------------------------------
+ */
+#elif defined (PIC_XC32)                                                // use RB13 as IR input on PIC (XC32 or ChipKIT compiler)
+#  define IRMP_PIN                            PORTBbits.RB13
+#  define IRMP_ANSELBIT                       ANSELBbits.ANSB13         // leave this undefined if the pin has no analog function
 
 /*---------------------------------------------------------------------------------------------------------------------------------------------------
  * Change hardware pin here for PIC CCS compiler

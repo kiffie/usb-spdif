@@ -48,7 +48,7 @@
 #  define IRMP_BIT                              IRMP_BIT_NUMBER
 #  define input(x)                              ((x) & (1 << IRMP_BIT))
 
-#elif defined (PIC_C18) || defined (PIC_CCS)
+#elif defined (PIC_C18) || defined (PIC_CCS) || defined(PIC_XC32)
 #  define input(x)                              (x)
 
 #elif defined (ARM_STM32)

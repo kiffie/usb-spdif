@@ -22,6 +22,8 @@
 #elif defined(__XC8)                                                                // PIC XC8 compiler
 #  include <xc.h>
 #  define PIC_C18
+#elif defined(__XC32)                                                               // XC32 or ChipKit compiler
+#  define PIC_XC32
 #elif defined(__PCM__) || defined(__PCB__) || defined(__PCH__)                      // CCS PIC compiler
 #  define PIC_CCS
 #elif defined(STM32L1XX_MD) || defined(STM32L1XX_MDP) || defined(STM32L1XX_HD)      // ARM STM32
@@ -187,6 +189,11 @@ typedef unsigned short                  uint_fast16_t;
 #ifndef TRUE
 #  define TRUE                          1
 #  define FALSE                         0
+#endif
+
+#if defined(PIC_XC32)                                                               // XC32 or ChipKit compiler
+#  include <xc.h>
+#  include <stdint.h>
 #endif
 
 #if IRMP_32_BIT == 1
