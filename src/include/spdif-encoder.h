@@ -98,6 +98,16 @@ static inline void spdif_encode_frame_s24le(struct spdif_encoder *spdif,
 	spdif_encode_frame_generic(spdif, encoded, left, right);
 }
 
+static inline void spdif_encode_frame_s24le_packed(struct spdif_encoder *spdif,
+                                                   void *encoded,
+                                                   const void *frame)
+{
+	const uint8_t *f = frame;
+	int left = (f[0]|(f[1]<<8)|(f[2]<<16)) << 4;
+	int right= (f[3]|(f[4]<<8)|(f[5]<<16)) << 4;
+	spdif_encode_frame_generic(spdif, encoded, left, right);
+}
+
 static inline void spdif_encode_frame_s16le(struct spdif_encoder *spdif,
 					    void *encoded,
 					    const void *frame)

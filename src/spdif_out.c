@@ -108,6 +108,30 @@ void spdif_out_tx_s24le(int32_t *frames, unsigned n_frames){
     }
 }
 
+void spdif_out_tx_s24le_packed(uint8_t *frames, unsigned n_frames){
+    int i;
+    unsigned free;
+    if(n_frames > 0){
+        spdif.tx_ctr += n_frames;
+        free =  SPDIF_BUFLEN - spdif_out_get_buflen();
+        if( n_frames > free ){
+            //log_error("S/PDIF buffer full: n_frames=%u, buflen=%u\n",
+            //          n_frames, free);
+            spdif.bov_ctr++;
+            n_frames = free;
+        }
+        for(i = 0; i< n_frames; i++){
+            spdif_encode_frame_s24le_packed(&spdif.encoder,
+                                            &spdif.spdif_buf[spdif.tx_ptr++],
+                                            &frames[6*i]);
+            if( spdif.tx_ptr >= SPDIF_BUFLEN){
+                spdif.tx_ptr = 0;
+            }
+        }
+    }
+}
+
+
 #define RO_BASE_CLOCK 96000000
 #ifdef SPDIF_REFCLKWIRE
     #define RO_BASE_DIV 2

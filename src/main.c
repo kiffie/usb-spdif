@@ -71,6 +71,8 @@ int main(void)
 static void usb_device_data_handler(uint8_t ep_addr, void *data, unsigned len){
 #if PCM_SUBFRAMESIZE == 2
     spdif_out_tx_s16le(data, len/4);
+#elif PCM_SUBFRAMESIZE == 3
+    spdif_out_tx_s24le_packed(data, len/6);
 #elif PCM_SUBFRAMESIZE == 4
     spdif_out_tx_s24le(data, len/8);
 #else

@@ -154,8 +154,10 @@ static const uint8_t usb_config_desc[USB_CONFIG_DESC_LEN] = {
     PCM_SUBFRAMESIZE,                   // bSubFrameSize
 #if PCM_SUBFRAMESIZE == 2
     16,                                 // bBitResolution
-#elif PCM_SUBFRAMESIZE == 4
+#elif PCM_SUBFRAMESIZE == 3 || PCM_SUBFRAMESIZE == 4
     24,                                 // bBitResolution
+#else
+#   error "invalid subframe size"
 #endif
     0x01,                               // bSamFreqType
     BYTE0(PCM_FSAMPLE),                 // tSamFreq
