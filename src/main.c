@@ -6,10 +6,9 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-/* USB device stack */
 #include <usb_audio.h>
-
 #include <spdif_out.h>
+#include <irhid.h>
 
 #include <mips_irq.h>
 #include <terminal.h>
@@ -57,13 +56,14 @@ int main(void)
 #endif
     spdif_out_init();
     usb_init();
+    irhid_init();
     usb_audio_init();
     usb_audio_set_callback(0x01, usb_device_data_handler);
-    timer_wait_ms(10); /* need time to ID pin state detection to work properly */
 
     while(1) {
 
         spdif_out_tasks();
+        irhid_tasks();
 
     }
 }

@@ -7,10 +7,6 @@ CC=pic32-gcc
 BIN2HEX = pic32-bin2hex
 OBJDUMP = pic32-objdump
 
-#CC = xc32-gcc
-#BIN2HEX = xc32-bin2hex
-#OBJDUMP = xc32-objdump
-
 PRG = usb-spdif
 
 #PROC = 32MX270F256D
@@ -19,15 +15,17 @@ PROC = 32MX250F128B
 
 CFLAGS = -Wall -g -mprocessor=$(PROC) -O2 -DSYS_CLOCK=40000000 -DI2C_X=1 \
          -DTERM_TXBUFSIZE=4096 \
-         -Iinclude
+         -Iinclude -Iirmp
 
 
 LDFLAGS = $(CFLAGS) -Wl,-Map=$(PRG).map,--memorysummary,$(PRG).mem,--defsym=_min_heap_size=4096
 
 OBJECTS = main.o pic32_config.o spdif_out.o spdif-encoder.o \
           mips_irq.o terminal.o tinyprintf.o timer.o \
-          usb.o usb_descriptors.o usb_audio.o
+          usb.o usb_descriptors.o usb_audio.o \
+          irmp.o irhid.o
 
+VPATH = irmp
 
 DEPS    = $(patsubst %.o, %.d, $(notdir $(OBJECTS)))
 

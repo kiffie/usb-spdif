@@ -41,6 +41,11 @@
 #define USB9_DESC_DEVICE_QUALIFIER          6
 #define USB9_DESC_OTHER_SPEED_CONFIGURATION 8
 
+/* HID descriptors */
+#define USB9_DESC_HID                       0x21
+#define USB9_DESC_HID_REPORT                0x22
+#define USB9_DESC_HID_PHYS                  0x23
+
 #define USB9_EPDESC_ATTR_TYPE_MASK          0x03
 #define USB9_EPDESC_ATTR_TYPE_CONTROL       0
 #define USB9_EPDESC_ATTR_TYPE_ISO           1

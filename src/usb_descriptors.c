@@ -1,5 +1,8 @@
 /*
- * USB device and configuration descriptors
+ * USB descriptors
+ *
+ * also contains usb_init(), which initializes the USB device with these
+ * descriptors
  */
 
 #include <usb_audio.h>
@@ -9,11 +12,26 @@
 #define BYTE1(word) ((word >> 8) & 0xff)
 #define BYTE2(word) ((word >> 16) & 0xff)
 
+const uint8_t usb_hid_report_desc[] = {
+    0x05, 0x0c,             // USAGE_PAGE (Consumer)
+    0x09, 0x01,             // USAGE (consumer control)
+    0xa1, 0x01,             // COLLECTION (Application)
+    0x19, 0x00,             //   USAGE_MINIMUM
+    0x2a, 0x9c, 0x02,       //   USAGE_MAXIMUM
+    0x15, 0x00,             //   LOGICAL_MINIMUM
+    0x26, 0x9c, 0x02,       //   LOGICAL_MAXIMUM
+    0x95, 0x01,             //   REPORT_COUNT (1)
+    0x75, 0x10,             //   REPORT_SIZE (16)
+    0x81, 0x00,             //   INPUT (Data,Ary,Abs)
+    0xc0                    // END_COLLECTION
+};
 
-static struct usb9_device_descriptor usb_device_desc = {
+const size_t USB_HID_REPORT_DESC_LEN = sizeof(usb_hid_report_desc);
+
+
+static const struct usb9_device_descriptor usb_device_desc = {
     .bLength= 18,
     .bDescriptorType= USB9_DESC_DEVICE,
-    //.bcdUSB= 0x0110,
     .bcdUSB= 0x0200,
     .bDeviceClass= 0,
     .bDeviceSubClass= 0,
@@ -30,140 +48,180 @@ static struct usb9_device_descriptor usb_device_desc = {
 
 #define AUDIO_CONTROL_INTERFACE_ID 0x00
 #define AUDIO_STREAMING_INTERFACE_ID 0x01
+#define HID_INTERFACE_ID 0x02
 
+#define USB_CONFIG_DESC_LEN 134
 
-static const uint8_t usb_config_desc[] = {
-   /* USB Speaker Configuration Descriptor */
-   0x09,                             // Size of this descriptor in bytes
-   USB9_DESC_CONFIGURATION,          // CONFIGURATION descriptor type
-   0x6D,0x00,                        // Total length of data for this cfg
-   0x02,                             // Number of interfaces in this cfg
-   0x01,                             // Index value of this configuration
-   0x00,                             // Configuration string index
-   0x80,                             // Attributes
-   100,                              // Max power consumption (200 mA)
+static const uint8_t usb_config_desc[USB_CONFIG_DESC_LEN] = {
+    0x09,                               // bLength
+    USB9_DESC_CONFIGURATION,            // bDescriptorType
+    BYTE0(USB_CONFIG_DESC_LEN),         // wTotalLength
+    BYTE1(USB_CONFIG_DESC_LEN),
+    0x03,                               // Number of interfaces in this cfg
+    0x01,                               // Index value of this configuration
+    0x00,                               // Configuration string index
+    0x80,                               // Attributes
+    100,                                // Max power consumption (200 mA)
 
-   /* Standard AC Interface Descriptor  */
-   0x09,                             // Size of this descriptor in bytes (bLength)
-   USB9_DESC_INTERFACE,              // INTERFACE descriptor type (bDescriptorType)
-   0x00,                             // Interface Number  (bInterfaceNumber)
-   0x00,                             // Alternate Setting Number (bAlternateSetting)
-   0x00,                             // Number of endpoints in this intf (bNumEndpoints)
-   0x01,                             // Class code  (bInterfaceClass): AUDIO_DEVICE
-   0x01,                             // Subclass code (bInterfaceSubclass): AUDIO_CONTROL
-   0x00,                             // Protocol code  (bInterfaceProtocol)
-   0x00,                             // Interface string index (iInterface)
+    /* Standard Audio Control Interface Descriptor */
+    0x09,                               // bLength
+    USB9_DESC_INTERFACE,                // bDescriptorType
+    AUDIO_CONTROL_INTERFACE_ID,         // bInterfaceNumber
+    0x00,                               // bAlternateSetting
+    0x00,                               // bNumEndpoints
+    0x01,                               // bInterfaceClass: AUDIO_DEVICE
+    0x01,                               // bInterfaceSubclass: AUDIO_CONTROL
+    0x00,                               // bInterfaceProtocol
+    0x00,                               // iInterface
 
-   /* Class-specific AC Interface Descriptor  */
-    0x09,                            // Size of this descriptor in bytes (bLength)
-    0x24,                            // CS_INTERFACE Descriptor Type (bDescriptorType)
-    0x01,                            // HEADER descriptor subtype   (bDescriptorSubtype)
-    0x00,0x01,                       // Audio Device compliant to the USB Audio specification version 1.00 (bcdADC)
-    0x27,0x00,                       // wTotalLength
-                                     // Includes the combined length of this descriptor header and all Unit and Terminal descriptors.
-    0x01,                            // The number of AudioStreaming interfaces in the Audio Interface Collection to which this AudioControl interface belongs  (bInCollection)
-    0x01,                            // AudioStreaming interface 1 belongs to this AudioControl interface. (baInterfaceNr(1))
+    /* Class-specific Audio Control Interface Descriptor  */
+    0x09,                               // bLength
+    0x24,                               // bDescriptorType: CS_INTERFACE
+    0x01,                               // bDescriptorSubtype
+    0x00,0x01,                          // bcdADC
+    0x27,0x00,                          // wTotalLength
+    0x01,                               // bInCollection
+    0x01,                               // baInterfaceNr
 
     /* Input Terminal Descriptor */
-    0x0C,                            // Size of the descriptor, in bytes (bLength)
-    0x24,                            // CS_INTERFACE Descriptor Type (bDescriptorType)
-    0x02,                            // INPUT_TERMINAL descriptor subtype (bDescriptorSubtype)
-    ID_INPUT_TERMINAL,               // ID of this Terminal.(bTerminalID)
-    0x01,0x01,                       // wTerminalType
-    0x00,                            // No association (bAssocTerminal)
-    PCM_CHANNELS,                    // bNrChannels
-    0x03,0x00,                       // Left Front and Right front chanels (wChannelConfig)
-    0x00,                            // Unused.(iChannelNames)
-    0x00,                            // Unused. (iTerminal)
+    0x0c,                               // bLength)
+    0x24,                               // bDescriptorType: CS_INTERFACE
+    0x02,                               // bDescriptorSubtype: INPUT_TERMINAL
+    ID_INPUT_TERMINAL,                  // bTerminalID
+    0x01,0x01,                          // wTerminalType
+    0x00,                               // bAssocTerminal
+    PCM_CHANNELS,                       // bNrChannels
+    0x03,0x00,                          // wChannelConfig: Left Front and Right Front
+    0x00,                               // iChannelNames
+    0x00,                               // iTerminal
 
     /* Feature Unit Descriptor */
-    0x09,                            // Size of the descriptor, in bytes (bLength)
-    0x24,                            // CS_INTERFACE Descriptor Type (bDescriptorType)
-    0x06,                            // FEATURE_UNIT  descriptor subtype (bDescriptorSubtype)
-    ID_FEATURE_UNIT,                 // ID of this Unit ( bUnitID  ).
-    ID_INPUT_TERMINAL,               // Input terminal is connected to this unit(bSourceID)
-    0x02,                            // bControlSize
-    0x01,0x00,                       // (bmaControls(0))
-    0x00,                            //  iFeature
+    0x09,                               // bLength
+    0x24,                               // bDescriptorType
+    0x06,                               // bDescriptorSubtype: FEATURE_UNIT
+    ID_FEATURE_UNIT,                    // bUnitID
+    ID_INPUT_TERMINAL,                  // bSourceID
+    0x02,                               // bControlSize
+    0x01,0x00,                          // bmaControls
+    0x00,                               // iFeature
 
     /* Output Terminal Descriptor */
-    0x09,                            // Size of the descriptor, in bytes (bLength)
-    0x24,                            // CS_INTERFACE Descriptor Type (bDescriptorType)
-    0x03,                            // OUTPUT_TERMINAL  descriptor subtype (bDescriptorSubtype)
-    ID_OUTPUT_TERMINAL,              // ID of this Terminal.(bTerminalID)
-    0x01,0x03,                       // (wTerminalType)See USB Audio Terminal Types.
-    0x00,                            // No association (bAssocTerminal)
-    ID_FEATURE_UNIT,                 // (bSourceID)
-    0x00,                            // iTerminal (index of a string descriptor)
+    0x09,                               // bLength
+    0x24,                               // bDescriptorType: CS_INTERFACE
+    0x03,                               // bDescriptorSubtype: OUTPUT_TERMINAL
+    ID_OUTPUT_TERMINAL,                 // bTerminalID
+    0x01, 0x03,                         // wTerminalType
+    0x00,                               // bAssocTerminal
+    ID_FEATURE_UNIT,                    // bSourceID
+    0x00,                               // iTerminal
 
     /* Standard AS Interface Descriptor (Alt. Set. 0) */
-    0x09,                            // Size of the descriptor, in bytes (bLength)
-    USB9_DESC_INTERFACE,             // INTERFACE descriptor type (bDescriptorType)
-    AUDIO_STREAMING_INTERFACE_ID,    // Interface Number  (bInterfaceNumber)
-    0x00,                            // Alternate Setting Number (bAlternateSetting)
-    0x00,                            // Number of endpoints in this intf (bNumEndpoints)
-    0x01,                            // AUDIO_DEVICE Class code  (bInterfaceClass)
-    0x02,                            // AUDIOSTREAMING Subclass code (bInterfaceSubclass)
-    0x00,                            // Protocol code  (bInterfaceProtocol)
-    0x00,                            // Interface string index (iInterface)
+    0x09,                               // bLength
+    USB9_DESC_INTERFACE,                // bDescriptorType
+    AUDIO_STREAMING_INTERFACE_ID,       // bInterfaceNumber
+    0x00,                               // bAlternateSetting
+    0x00,                               // bNumEndpoints
+    0x01,                               // bInterfaceClass: AUDIO_DEVICE
+    0x02,                               // bInterfaceSubclass: AUDIOSTREAMING
+    0x00,                               // bInterfaceProtocol
+    0x00,                               // iInterface
 
     /* Standard AS Interface Descriptor (Alt. Set. 1) */
-    0x09,                            // Size of the descriptor, in bytes (bLength)
-    USB9_DESC_INTERFACE,             // INTERFACE descriptor type (bDescriptorType)
-    AUDIO_STREAMING_INTERFACE_ID,    // Interface Number  (bInterfaceNumber)
-    0x01,                            // Alternate Setting Number (bAlternateSetting)
-    0x01,                            // Number of endpoints in this intf (bNumEndpoints)
-    0x01,                            // AUDIO_DEVICE Class code  (bInterfaceClass)
-    0x02,                            // AUDIOSTREAMING Subclass code (bInterfaceSubclass)
-    0x00,                            // Protocol code  (bInterfaceProtocol)
-    0x00,                            // Interface string index (iInterface)
+    0x09,                               // bLength
+    USB9_DESC_INTERFACE,                // bDescriptorType
+    AUDIO_STREAMING_INTERFACE_ID,       // bInterfaceNumber
+    0x01,                               // bAlternateSetting
+    0x01,                               // bNumEndpoints
+    0x01,                               // bInterfaceClass: AUDIO_DEVICE
+    0x02,                               // bInterfaceSubclass: AUDIOSTREAMING
+    0x00,                               // bInterfaceProtocol
+    0x00,                               // iInterface
 
     /*  Class-specific AS General Interface Descriptor */
-    0x07,                            // Size of the descriptor, in bytes (bLength)
-    0x24,                            // CS_INTERFACE Descriptor Type (bDescriptorType)
-    0x01,                            // AS_GENERAL subtype (bDescriptorSubtype)
-    0x01,                            // Unit ID of the Output Terminal.(bTerminalLink)
-    0x01,                            // Interface delay. (bDelay)
-    0x01,0x00,                       // PCM Format (wFormatTag)
+    0x07,                               // bLength
+    0x24,                               // bDescriptorType: CS_INTERFACE
+    0x01,                               // bDescriptorSubtype: AS_GENERAL
+    0x01,                               // bTerminalLink
+    0x01,                               // bDelay
+    0x01,0x00,                          // wFormatTag: PCM
 
     /*  Type 1 Format Type Descriptor */
-    0x0B,                            // Size of the descriptor, in bytes (bLength)
-    0x24,                            // CS_INTERFACE Descriptor Type (bDescriptorType)
-    0x02,                            // FORMAT_TYPE subtype. (bDescriptorSubtype)
-    0x01,                            // FORMAT_TYPE_1. (bFormatType)
-    PCM_CHANNELS,                    // bNrChannels
-    PCM_SUBFRAMESIZE,                // bSubFrameSize
+    0x0B,                               // bLength
+    0x24,                               // bDescriptorType: CS_INTERFACE
+    0x02,                               // bDescriptorSubtype: FORMAT_TYPE
+    0x01,                               // bFormatType: FORMAT_TYPE_1
+    PCM_CHANNELS,                       // bNrChannels
+    PCM_SUBFRAMESIZE,                   // bSubFrameSize
 #if PCM_SUBFRAMESIZE == 2
-    16,                              // bBitResolution
+    16,                                 // bBitResolution
 #elif PCM_SUBFRAMESIZE == 4
-    24,                              // bBitResolution
+    24,                                 // bBitResolution
 #endif
-    0x01,                            // bSamFreqType
-    BYTE0(PCM_FSAMPLE),              // tSamFreq
+    0x01,                               // bSamFreqType
+    BYTE0(PCM_FSAMPLE),                 // tSamFreq
     BYTE1(PCM_FSAMPLE),
     BYTE2(PCM_FSAMPLE),
 
     /*  Standard Endpoint Descriptor */
-    0x09,                            // Size of the descriptor, in bytes (bLength)
-    USB9_DESC_ENDPOINT,              // ENDPOINT descriptor (bDescriptorType)
-    0x01,                            // OUT Endpoint 1. (bEndpointAddress)
-    0x0d,                            // bmAttributes: Isochronous, Synchronous
-    BYTE0(USB_AUDIO_ISO_EP_SIZE),    // wMaxPacketSize
+    0x09,                               // bLength
+    USB9_DESC_ENDPOINT,                 // bDescriptorType
+    0x01,                               // bEndpointAddress
+    0x0d,                               // bmAttributes: Isochronous, Synchronous
+    BYTE0(USB_AUDIO_ISO_EP_SIZE),       // wMaxPacketSize
     BYTE1(USB_AUDIO_ISO_EP_SIZE),
-    0x01,                            // bInterval
-    0x00,                            // bRefresh
-    0x00,                            // bSynchAddress
+    0x01,                               // bInterval
+    0x00,                               // bRefresh
+    0x00,                               // bSynchAddress
 
     /* Class-specific Isoc. Audio Data Endpoint Descriptor*/
-    0x07,                            // Size of the descriptor, in bytes (bLength)
-    0x25,                            // CS_ENDPOINT Descriptor Type (bDescriptorType)
-    0x01,                            // GENERAL subtype. (bDescriptorSubtype)
-    0x00,                            // No sampling frequency control, no pitch control, no packet padding.(bmAttributes)
-    0x00,                            // bLockDelayUnits
-    0x00,0x00                        // wLockDelay)
+    0x07,                               // bLength
+    0x25,                               // bDescriptorType: CS_ENDPOINT
+    0x01,                               // bDescriptorSubtype: GENERAL
+    0x00,                               // bmAttributes
+    0x00,                               // bLockDelayUnits
+    0x00,0x00,                          // wLockDelay
+
+    /* Interface 1 descriptor (HID device) */
+    0x09,                               // bLength
+    USB9_DESC_INTERFACE,                // bDescriptorType
+    HID_INTERFACE_ID,                   // bInterfaceNumber
+    0x00,                               // bAlternateSetting
+    0x01,                               // bNumEndpoints
+    0x03,                               // bInterfaceClass: HID
+    0x00,                               // bInterfaceSubclass: No Subclass
+    0x00,                               // bInterfaceProtocol
+    0x00,                               // iInterface
+    /* HID descriptor */
+    0x09,                               // bLength
+    USB9_DESC_HID,                      // bDescriptorType
+    0x01, 0x01,                         // bcdHID
+    0x00,                               // bCountryCode
+    0x01,                               // bNumDescriptors
+    USB9_DESC_HID_REPORT,               // bDescriptorType
+    BYTE0(sizeof(usb_hid_report_desc)), // wDescriptorLength
+    BYTE1(sizeof(usb_hid_report_desc)),
+
+    /* Endpoint Descriptor */
+    0x07,                               // bLength
+    USB9_DESC_ENDPOINT,                 // bDescriptorType
+    0x82,                               // bEndpointAddress
+    USB9_EPDESC_ATTR_TYPE_INTERRUPT,    // bmAttributes
+    BYTE0(8), BYTE1(8),                 // wMaxPacketSize
+    10,                                 // bInterval
 };
 
+/* This must be adapted when configuration descriptor is changed */
+#define HID_DESC_NDX (sizeof(usb_config_desc) - 7 - 9)
+
+static const usb_desc_table_elem_t usb_desc_table[] = {
+    { 0, USB9_DESC_DEVICE, 0, &usb_device_desc, sizeof(usb_device_desc) },
+    { 0, USB9_DESC_CONFIGURATION, 0, usb_config_desc, sizeof(usb_config_desc) },
+    { 0, USB9_DESC_HID, 0, &usb_config_desc[HID_DESC_NDX], 9 },
+    { 0, USB9_DESC_HID_REPORT, HID_INTERFACE_ID, usb_hid_report_desc, sizeof(usb_hid_report_desc) },
+    { 0, 0, 0, NULL, 0 }
+};
+
+
 void usb_init(void){
-    usb_init_with_desc(&usb_device_desc,
-                       &usb_config_desc, sizeof(usb_config_desc));
+    usb_init_with_desc(usb_desc_table);
 }

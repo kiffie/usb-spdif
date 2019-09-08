@@ -18,6 +18,15 @@
 #define USB_NO_ENDPOINTS 16   /* number of used endpoints (max. 16) */
 
 
+typedef struct usb_desc_table_elem {
+    uint8_t desc_index;
+    uint8_t desc_type;
+    uint16_t wIndex;
+    const void *desc;
+    uint16_t desc_len;
+} usb_desc_table_elem_t;
+
+
 typedef void (*usb_completion_cb_t)(unsigned ep,
                                     unsigned pid,
                                     void *buffer,
@@ -28,8 +37,7 @@ typedef int (*usb_crtl_setup_cb_t)(usb9_setup_data_t *setup_packet,
 
 typedef void (*usb_ctrl_data_complete_cb_t)(int canceled);
 
-void usb_init_with_desc(const usb9_device_descriptor_t *device_desc,
-                        const void *config_desc, size_t config_desc_size);
+void usb_init_with_desc(const usb_desc_table_elem_t *desc_table);
 
 /* to be defined in application,
  * typically a wrapper around usb_init_with_desc()

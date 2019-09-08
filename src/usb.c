@@ -35,7 +35,7 @@
 #define USB_BD_PID_MSK  0x3c
 #define USB_BD_PID_LEN  4
 
-typedef unsigned dma_addr_t;
+typedef size_t dma_addr_t;
 
 typedef struct usb_buffer_descriptor {
     uint16_t flags;
@@ -73,9 +73,7 @@ enum usb_control_state {
 };
 
 typedef struct usb_context {
-    const usb9_device_descriptor_t *device_desc;
-    const void *config_desc;
-    size_t config_desc_size;
+    const usb_desc_table_elem_t *desc_table;
     usb_ep_info_t ep_info[USB_NO_ENDPOINTS][2]; /* 0: OUT (RX); 1: IN (TX) */
 
     /* endpoint zero */
@@ -293,7 +291,8 @@ static void usb_stall_ep0(void){
  *          -1 in case of a Request Error (indicates that EP0 shall be stalled
  *          without entering the data phase)
  */
-int usb_ep0_std_request_cb(usb9_setup_data_t *setup_data, uint8_t **inout_data){
+static int usb_ep0_std_request_cb(usb9_setup_data_t *setup_data,
+                                  const uint8_t **inout_data){
     int res= -1;
     static uint16_t word_buf;
 
@@ -305,28 +304,28 @@ int usb_ep0_std_request_cb(usb9_setup_data_t *setup_data, uint8_t **inout_data){
             res= 2;
             break;
 
-        case USB9_REQ_GET_DESCRIPTOR:
-            switch( setup_data->wValue>>8 ){
-                case USB9_DESC_DEVICE:
-                    log_debug("get device descriptor\n");
-                    *inout_data= (void *)usb.device_desc;
-                    res= sizeof(usb9_device_descriptor_t);
+        case USB9_REQ_GET_DESCRIPTOR:;
+            uint8_t desc_index = setup_data -> wValue;
+            uint8_t desc_type  = setup_data -> wValue >> 8;
+            const usb_desc_table_elem_t *desc_elem = usb.desc_table;
+            while(desc_elem->desc != NULL){
+                if(desc_elem->desc_index == desc_index &&
+                   desc_elem->desc_type  == desc_type  &&
+                   desc_elem->wIndex     == setup_data->wIndex)
+                {
                     break;
-                case USB9_DESC_CONFIGURATION:
-                    log_debug("get configuration descriptor\n");
-                    int len;
-                    if( setup_data->wLength < usb.config_desc_size )
-                        len= setup_data->wLength;
-                    else
-                        len= usb.config_desc_size;
-                    *inout_data= (void *)usb.config_desc;
-                    res=  len;
-                    break;
-                default: /* stall on any other descriptor type */
-                    log_error("get request for unsupported descriptor type %04x\n",
-                        setup_data->wValue);
-                    res= -1;
-                    break;
+                }
+                desc_elem++;
+            }
+            if(desc_elem->desc != NULL){
+                log_info("get descriptor, wValue = 0x%04x, wLength = %u, desc_len = %u\n",
+                         setup_data->wValue, setup_data->wLength, desc_elem->desc_len);
+                *inout_data = desc_elem->desc;
+                res = MIN(desc_elem->desc_len, setup_data->wLength);
+            }else{ /* stall on unsupported descriptor type */
+                log_error("get request for unsupported descriptor type 0x%04x\n",
+                           setup_data->wValue);
+                res= -1;
             }
             break;
         case USB9_REQ_SET_ADDRESS:
@@ -451,7 +450,7 @@ static void usb_ep0_handler(unsigned ep, unsigned pid, void* buffer, unsigned le
                 case USB9_RT_TYPE_STANDARD:
                     xfer_len = usb_ep0_std_request_cb(
                             &usb.ep0_setup,
-                            &usb.ep0_xfer_buf);
+                            (const uint8_t **)&usb.ep0_xfer_buf);
                     break;
                 case USB9_RT_TYPE_CLASS:
                     xfer_len = usb.ep0_class_request_handler(
@@ -575,16 +574,13 @@ static void usb_ep0_handler(unsigned ep, unsigned pid, void* buffer, unsigned le
     }
 }
 
-void usb_init_with_desc(const usb9_device_descriptor_t *device_desc,
-                        const void *config_desc, size_t config_desc_size)
+void usb_init_with_desc(const usb_desc_table_elem_t *desc_table)
 {
     memset(&usb_bdt, sizeof(usb_bdt), 0);
     memset(&usb, sizeof(usb), 0);
 
     U1CON = 0; /* first turn USB off */
-    usb.device_desc = device_desc;
-    usb.config_desc = config_desc;
-    usb.config_desc_size = config_desc_size;
+    usb.desc_table = desc_table;
     usb.ep0_vendor_request_handler = usb_default_ep0_request_cb;
     usb.ep0_vendor_data_complete = usb_default_ep0_data_complete_cb;
     usb.ep0_class_request_handler = usb_default_ep0_request_cb;
