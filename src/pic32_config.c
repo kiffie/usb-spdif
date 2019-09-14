@@ -26,14 +26,18 @@
 
 #if SYS_CLOCK == 40000000
     #pragma config FPLLMUL  = MUL_20    // PLL Multiplier
+    #pragma config FPLLODIV = DIV_2     // PLL Output Divider
 #elif SYS_CLOCK == 48000000
     #pragma config FPLLMUL  = MUL_24    // PLL Multiplier
+    #pragma config FPLLODIV = DIV_2     // PLL Output Divider
+#elif SYS_CLOCK == 72000000
+    #pragma config FPLLMUL  = MUL_18    // PLL Multiplier
+    #pragma config FPLLODIV = DIV_1     // PLL Output Divider
 #else
     #error "unexpected SYS_CLOCK"
 #endif
 
 #pragma config FPLLIDIV = DIV_2         // PLL Input Divider
-#pragma config FPLLODIV = DIV_2         // PLL Output Divider
 
 #pragma config FPBDIV   = DIV_1         // Peripheral Clock divisor
 

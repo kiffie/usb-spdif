@@ -578,7 +578,6 @@ void usb_init_with_desc(const usb_desc_table_elem_t *desc_table)
 {
     memset(&usb_bdt, sizeof(usb_bdt), 0);
     memset(&usb, sizeof(usb), 0);
-
     U1CON = 0; /* first turn USB off */
     usb.desc_table = desc_table;
     usb.ep0_vendor_request_handler = usb_default_ep0_request_cb;
@@ -607,7 +606,7 @@ void usb_init_with_desc(const usb_desc_table_elem_t *desc_table)
 
 #if defined( __32MX440F256H__)
     IPC11bits.USBIP = 4;
-#elif defined(__32MX470F512H__) || defined(__32MX250F128B__) || defined(__32MX270F256D__) || defined(__32MX274F256B__)
+#elif defined(__32MX470F512H__) || defined(__32MX250F128B__) || defined(__32MX270F256B__) || defined(__32MX270F256D__) || defined(__32MX274F256B__)
     IPC7bits.USBIP = 4;
 #else
     #error MCU type not supported

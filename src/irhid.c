@@ -9,6 +9,7 @@
 
 #include <irmp.h>
 #include <xc.h>
+#include <pic32clk.h>
 #include <sys/attribs.h>
 
 #include <logger.h>
@@ -19,18 +20,6 @@
 #define LOGLEVEL LOGLEVEL_IRHID
 #define LOG_PREFIX "IRHID"
 
-
-
-/* modfier key bits as defined in the HID report descriptor */
-#define MOD_CONTROL_LEFT    (1<<0)
-#define MOD_SHIFT_LEFT      (1<<1)
-#define MOD_ALT_LEFT        (1<<2)
-#define MOD_GUI_LEFT        (1<<3)
-#define MOD_CONTROL_RIGHT   (1<<4)
-#define MOD_SHIFT_RIGHT     (1<<5)
-#define MOD_ALT_RIGHT       (1<<6)
-#define MOD_GUI_RIGHT       (1<<7)
-
 typedef struct irhid_keymap {
     uint8_t rc_proto;
     uint16_t rc_address;
@@ -39,10 +28,8 @@ typedef struct irhid_keymap {
 } irhid_keymap_t;
 
 static const irhid_keymap_t irhid_keymap[] = {
-
-
-    {7, 0, 16, 0x00e9 },    /* Keyboard Volume Up */
-    {7, 0, 17, 0x00ea },    /* Keyboard Volume Down */
+    {7, 0, 16, 0x00e9 },    /* Volume Up */
+    {7, 0, 17, 0x00ea },    /* Volume Down */
     {7, 0, 13, 0x00e2 },    /* Mute */
     {7, 0, 50, 0x00b0 },    /* Play */
     {7, 0, 60, 0x00cd },    /* Play/Pause */
@@ -95,7 +82,7 @@ void irhid_init(void){
     irhid.tx_state = TXS_IDLE;
     irhid.release_report = 0;
     irmp_init();
-    unsigned pb_clock= SYS_CLOCK>>OSCCONbits.PBDIV;
+    unsigned pb_clock= pic32clk_pb_clock();
     PR2 = pb_clock / F_INTERRUPTS;
     T2CON = _T2CON_ON_MASK;
 

@@ -26,23 +26,31 @@ static void usb_device_data_handler(uint8_t ep_addr, void *data, unsigned len);
 
 int main(void)
 {
-
+    term_init();
+    timer_init();
     BMXCONCLR = _BMXCON_BMXWSDRM_MASK;
+#if __PIC32_FEATURE_SET == 274
+#if SYS_CLOCK > 54000000
+    CHECON = 0b11 << _CHECON_PREFEN_POSITION | 3;   /* 3 wait states */
+#elif SYS_CLOCK > 36000000
+    CHECON = 0b11 << _CHECON_PREFEN_POSITION | 2;   /* 3 wait states */
+#elif SYS_CLOCK > 18000000
+    CHECON = 0b11 << _CHECON_PREFEN_POSITION | 1;   /* 3 wait state  */
+#else
+    CHECON = 0b11 << _CHECON_PREFEN_POSITION | 0;   /* 0 wait states */
+#endif
+    log_debug("CHECON = 0x%04x\n", CHECON);
+#endif
     mips_enable_mv_irq();
 #ifdef __32MX470F512H__
     RPF5R = 0b0001; /* U2TX for terminal (debug) output */
     CHECON = _CHECON_DCSZ_MASK | _CHECON_PREFEN_MASK | 1;
-#elif defined(__32MX270F256D__)
-    TRISBCLR = _TRISB_TRISB4_MASK; /* LED */
-    RPB0R = 0b0010; /* U2TX for terminal (debug) output */
 #else
     TRISBCLR = _TRISB_TRISB4_MASK; /* LED */
-    ANSELBCLR = 1 << 15; /* SCK2 */
+    ANSELBCLR = _ANSELB_ANSB15_MASK; /* SCK2 */
     RPB0R= 0b0010; /* U2TX for terminal (debug) output */
     RPB2R = 0b0111; /* REFCLKO */
 #endif
-    term_init();
-    timer_init();
     log_info("USB S/PDIF Interface\n");
     log_info("Fixed sampling rate: %u Hz\n", PCM_FSAMPLE);
 #ifdef SPDIF_REFCLKWIRE

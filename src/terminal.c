@@ -8,6 +8,7 @@
 
 #include "terminal.h"
 #include <tinyprintf.h>
+#include <pic32clk.h>
 #include <xc.h>
 #include <stdbool.h>
 
@@ -50,7 +51,7 @@
 #   define UxTXREG	U2TXREG
 #   define UxBRG	U2BRG
 #   define UxVECTOR     _UART_2_VECTOR
-#   if __PIC32_FEATURE_SET == 250 || __PIC32_FEATURE_SET == 274 || __PIC32_FEATURE_SET == 470
+#   if __PIC32_FEATURE_SET == 250 || __PIC32_FEATURE_SET == 270 || __PIC32_FEATURE_SET == 274 || __PIC32_FEATURE_SET == 470
 #       define UxIPC        IPC9bits.U2IP
 #       define UxTX_IFSCLR  IFS1CLR = _IFS1_U2TXIF_MASK
 #       define UxTXIE       IEC1SET = _IEC1_U2TXIE_MASK
@@ -172,18 +173,11 @@ static void term_tfp_putc( void* p, char c){
 #define TERM_BAUDRATE 115200
 
 void term_init(void) {
-
-#ifdef _OSCCON_PBDIV_POSITION
-    unsigned pb_clock= SYS_CLOCK>>OSCCONbits.PBDIV;
-#else
-    unsigned pb_clock = SYS_CLOCK;
-#endif
-
-    UxMODE= _U1MODE_BRGH_MASK;  /* format: 8N1 */
-    UxSTA= _U1STA_UTXEN_MASK |
+    UxMODE = _U1MODE_BRGH_MASK;  /* format: 8N1 */
+    UxSTA = _U1STA_UTXEN_MASK |
             (0b10 << _U1STA_UTXISEL_POSITION); /* irq when buffer becomes/is empty */
 
-    UxBRG= pb_clock/(4*TERM_BAUDRATE)-1;
+    UxBRG = pic32clk_pb_clock()/(4*TERM_BAUDRATE)-1;
     UxMODESET = _U1MODE_ON_MASK;
 #if TERM_TXBUFSIZE > 0
     UxIPC = TERM_IPL;
