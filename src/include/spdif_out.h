@@ -8,6 +8,9 @@
 
 #include <stdint.h>
 
+/* When this macro is defined then an external connection between the
+ * reference clock output and the SPI clock pin (SCK2) is required
+ */
 #define SPDIF_REFCLKWIRE
 
 void spdif_out_init(void);
