@@ -24,18 +24,32 @@ typedef struct irhid_keymap {
     uint8_t rc_proto;
     uint16_t rc_address;
     uint32_t rc_command;
+    /* key value is Usage ID as specified in USB HID Usage Tables Spec.,
+     * Consumer Page, p. 74 sqq.,
+     * see https://usb.org/sites/default/files/documents/hut1_12v2.pdf
+     */
     uint16_t key;
 } irhid_keymap_t;
 
 static const irhid_keymap_t irhid_keymap[] = {
+
+    /* RC5 code */
     {7, 0, 16, 0x00e9 },    /* Volume Up */
     {7, 0, 17, 0x00ea },    /* Volume Down */
     {7, 0, 13, 0x00e2 },    /* Mute */
-    {7, 0, 50, 0x00b0 },    /* Play */
-    {7, 0, 60, 0x00cd },    /* Play/Pause */
+    {7, 0, 53, 0x00b0 },    /* Play */
+    {7, 0, 48, 0x00cd },    /* Play/Pause */
     {7, 0, 54, 0x00b7 },    /* Stop */
-    {7, 5, 53, 0x00b5 },    /* Next Track */
-    {7, 5, 54, 0x00b6 },    /* Previous Track */
+    {7, 0, 52, 0x00b5 },    /* Next Track (Fast Forward on RC-5)*/
+    {7, 0, 50, 0x00b6 },    /* Previous Track (Fast Rewind on RC-5) */
+
+    /* Denon RC-1173 (Net) */
+    {5, 12884, 8202, 0x00cd },    /* Play/Pause */
+    {5, 12884, 8203, 0x00b7 },    /* Stop */
+    {5, 12884, 8204, 0x00b5 },    /* Next Track */
+    {5, 12884, 8205, 0x00b6 },    /* Previous Track */
+
+    /* End marker */
     {0xff, 0, 0, 0}
 };
 
