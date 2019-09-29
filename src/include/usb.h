@@ -35,7 +35,7 @@ typedef void (*usb_completion_cb_t)(unsigned ep,
 typedef int (*usb_crtl_setup_cb_t)(usb9_setup_data_t *setup_packet,
                                    void **inout_data);
 
-typedef void (*usb_ctrl_data_complete_cb_t)(int canceled);
+typedef void (*usb_ctrl_data_complete_cb_t)(bool canceled);
 
 void usb_init_with_desc(const usb_desc_table_elem_t *desc_table);
 
@@ -44,15 +44,12 @@ void usb_init_with_desc(const usb_desc_table_elem_t *desc_table);
  */
 void usb_init(void);
 
-void usb_set_class_req_handler(usb_crtl_setup_cb_t setup_cb,
-                               usb_ctrl_data_complete_cb_t data_complete_cb);
-
-void usb_set_vendor_req_handler(usb_crtl_setup_cb_t setup_cb,
+void usb_set_nonstd_req_handler(usb_crtl_setup_cb_t setup_cb,
                                 usb_ctrl_data_complete_cb_t data_complete_cb);
 
 void usb_shutdown(void);
 
-void usb_ctrl_data_confirm(int stall);
+void usb_ctrl_data_confirm(bool stall);
 
 void usb_stall_endpoint(int ep, int is_in);
 

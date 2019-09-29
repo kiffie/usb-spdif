@@ -25,6 +25,7 @@ typedef void (*usb_audio_data_cb_t)(uint8_t ep_addr, void *data, unsigned len);
 
 
 void usb_audio_init();
+int usb_audio_class_handler(usb9_setup_data_t *sudata, void **inout_data);
 
 /* returns true on success */
 bool usb_audio_set_callback(uint8_t ep_addr, usb_audio_data_cb_t callback);

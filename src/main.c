@@ -21,6 +21,39 @@
 #define LOGLEVEL LOGLEVEL_MAIN
 #define LOG_PREFIX "MAIN"
 
+static bool bootloader_start = false;
+
+static void enter_bootlader(void){
+    mips_di();
+    uint32_t *boot_magic = (uint32_t *)0xa0000000; /* start of SRAM */
+    *boot_magic = 0x746f6f62; /* store magic value at start of SRAM */
+    /* do a software reset */
+    SYSKEY = 0;
+    SYSKEY = 0xaa996655;
+    SYSKEY = 0x556699aa;
+    RSWRSTSET = _RSWRST_SWRST_MASK;
+    RSWRST;
+    while(true) { }; /* wait until reset happens */
+}
+
+
+static int nonstd_setup_handler(usb9_setup_data_t *sudata, void **inout_data){
+
+    if(sudata->bmRequestType == USB9_RT_TYPE_VENDOR){
+        if(sudata->bRequest == 0xf0 &&
+           sudata->wValue == 0 &&
+           sudata->wIndex == 0 &&
+           sudata->wLength == 0)
+        {
+            bootloader_start = true;
+            return 0;
+        }else{
+            return -1;
+        }
+    }else{
+        return usb_audio_class_handler(sudata, inout_data);
+    }
+}
 
 static void usb_device_data_handler(uint8_t ep_addr, void *data, unsigned len);
 
@@ -66,13 +99,19 @@ int main(void)
     usb_init();
     irhid_init();
     usb_audio_init();
+    usb_set_nonstd_req_handler(nonstd_setup_handler, NULL);
     usb_audio_set_callback(0x01, usb_device_data_handler);
 
     while(1) {
 
         spdif_out_tasks();
         irhid_tasks();
-
+        if(bootloader_start){
+            log_info("entering bootloader\n");
+            timer_wait_ms(10); /* enough time to complete USB transfer */
+            term_flush();
+            enter_bootlader();
+        }
     }
 }
 

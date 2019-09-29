@@ -60,9 +60,18 @@ typedef struct __attribute__ ((__packed__)) usb9_setup_data {
     uint16_t wLength;
 } usb9_setup_data_t;
 
-static inline int usb9_is_vendor_request(const usb9_setup_data_t *setup){
-    return (setup->bmRequestType & USB9_RT_TYPE_MASK) == USB9_RT_TYPE_VENDOR;
+static inline bool usb9_is_std_request(uint8_t bmRequestType){
+    return (bmRequestType & USB9_RT_TYPE_MASK) == USB9_RT_TYPE_STANDARD;
 }
+
+static inline bool usb9_is_vendor_request(uint8_t bmRequestType){
+    return (bmRequestType & USB9_RT_TYPE_MASK) == USB9_RT_TYPE_VENDOR;
+}
+
+static inline bool usb9_is_class_request(uint8_t bmRequestType){
+    return (bmRequestType & USB9_RT_TYPE_MASK) == USB9_RT_TYPE_CLASS;
+}
+
 
 typedef struct __attribute__ ((__packed__)) usb9_device_descriptor {
     uint8_t bLength;

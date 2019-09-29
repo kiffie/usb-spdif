@@ -86,11 +86,8 @@ typedef struct usb_context {
 
     uint8_t ep0_new_address;
 
-    usb_crtl_setup_cb_t ep0_vendor_request_handler;
-    usb_ctrl_data_complete_cb_t ep0_vendor_data_complete;
-
-    usb_crtl_setup_cb_t ep0_class_request_handler;
-    usb_ctrl_data_complete_cb_t ep0_class_data_complete;
+    usb_crtl_setup_cb_t ep0_nonstd_request_handler;
+    usb_ctrl_data_complete_cb_t ep0_nonstd_data_complete;
 
 } usb_context_t;
 
@@ -350,7 +347,7 @@ static int usb_ep0_std_request_cb(usb9_setup_data_t *setup_data,
  * complete the status phase of a CONTROL transfer; may be called from the
  * usb_ep0_control_done() handler
  */
-void usb_ctrl_data_confirm(int stall){
+void usb_ctrl_data_confirm(bool stall){
     usb_di();
     switch(usb.ep0_state){
         case USB_CS_RCONF:
@@ -380,9 +377,17 @@ static int usb_default_ep0_request_cb(usb9_setup_data_t *setup_packet, void **in
     return -1;
 }
 
-static void usb_default_ep0_data_complete_cb(int canceled){
+static void usb_default_ep0_data_complete_cb(bool canceled){
     if(!canceled){
         usb_ctrl_data_confirm(0);
+    }
+}
+
+static void call_data_complete_handler(bool canceled){
+    if(usb9_is_std_request(usb.ep0_setup.bmRequestType)){
+        usb_ctrl_data_confirm(canceled);
+    }else{
+        usb.ep0_nonstd_data_complete(canceled);
     }
 }
 
@@ -446,22 +451,14 @@ static void usb_ep0_handler(unsigned ep, unsigned pid, void* buffer, unsigned le
                       usb.ep0_setup.wIndex,
                       usb.ep0_setup.wLength);
             int xfer_len = -1;
-            switch(usb.ep0_setup.bmRequestType & USB9_RT_TYPE_MASK){
-                case USB9_RT_TYPE_STANDARD:
-                    xfer_len = usb_ep0_std_request_cb(
-                            &usb.ep0_setup,
-                            (const uint8_t **)&usb.ep0_xfer_buf);
-                    break;
-                case USB9_RT_TYPE_CLASS:
-                    xfer_len = usb.ep0_class_request_handler(
-                            &usb.ep0_setup,
-                            (void **)&usb.ep0_xfer_buf);
-                    break;
-                case USB9_RT_TYPE_VENDOR:
-                    xfer_len = usb.ep0_vendor_request_handler(
-                            &usb.ep0_setup,
-                            (void **)&usb.ep0_xfer_buf);
-                    break;
+            if(usb9_is_std_request(usb.ep0_setup.bmRequestType)){
+                xfer_len = usb_ep0_std_request_cb(
+                        &usb.ep0_setup,
+                        (const uint8_t **)&usb.ep0_xfer_buf);
+            }else{
+                xfer_len = usb.ep0_nonstd_request_handler(
+                        &usb.ep0_setup,
+                        (void **)&usb.ep0_xfer_buf);
             }
             bool stall = xfer_len < 0 || xfer_len > usb.ep0_setup.wLength;
             if(usb.ep0_setup.wLength > 0){ /* DATA phase present */
@@ -493,7 +490,7 @@ static void usb_ep0_handler(unsigned ep, unsigned pid, void* buffer, unsigned le
                 usb.ep0_state = USB_CS_IDLE;
                 usb_stall_ep0();
                 if(xfer_len > 0)
-                    usb.ep0_vendor_data_complete(-1);
+                    call_data_complete_handler(true);
             }
             U1CONbits.PKTDIS= 0;
             break;
@@ -506,17 +503,7 @@ static void usb_ep0_handler(unsigned ep, unsigned pid, void* buffer, unsigned le
                         usb_ep0_arm_for_data_stage(true);
                     }else{
                         usb.ep0_state = USB_CS_RCONF;
-                        switch(usb.ep0_setup.bmRequestType & USB9_RT_TYPE_MASK){
-                            case USB9_RT_TYPE_STANDARD:
-                                usb_ctrl_data_confirm(0);
-                                break;
-                            case USB9_RT_TYPE_CLASS:
-                                usb.ep0_class_data_complete(0);
-                                break;
-                            case USB9_RT_TYPE_VENDOR:
-                                usb.ep0_vendor_data_complete(0);
-                                break;
-                        }
+                        call_data_complete_handler(false);
                     }
                     break;
 
@@ -548,11 +535,7 @@ static void usb_ep0_handler(unsigned ep, unsigned pid, void* buffer, unsigned le
                         usb_ep0_arm_for_data_stage(false);
                     }else{
                         usb.ep0_state = USB_CS_WCONF;
-                        if(usb9_is_vendor_request(&usb.ep0_setup)){
-                            usb.ep0_vendor_data_complete(0);
-                        }else{
-                            usb_ctrl_data_confirm(0);
-                        }
+                        call_data_complete_handler(0);
                     }
                     break;
 
@@ -580,10 +563,8 @@ void usb_init_with_desc(const usb_desc_table_elem_t *desc_table)
     memset(&usb, sizeof(usb), 0);
     U1CON = 0; /* first turn USB off */
     usb.desc_table = desc_table;
-    usb.ep0_vendor_request_handler = usb_default_ep0_request_cb;
-    usb.ep0_vendor_data_complete = usb_default_ep0_data_complete_cb;
-    usb.ep0_class_request_handler = usb_default_ep0_request_cb;
-    usb.ep0_class_data_complete = usb_default_ep0_data_complete_cb;
+    usb.ep0_nonstd_request_handler = usb_default_ep0_request_cb;
+    usb.ep0_nonstd_data_complete = usb_default_ep0_data_complete_cb;
 
     U1OTGCON = 0; /* turn off VUSB, disable special USB OTG functions */
     U1PWRC = _U1PWRC_USBPWR_MASK;
@@ -622,22 +603,13 @@ void usb_init_with_desc(const usb_desc_table_elem_t *desc_table)
     U1CON = _U1CON_USBEN_MASK;
 }
 
-void usb_set_class_req_handler(usb_crtl_setup_cb_t setup_cb,
-                               usb_ctrl_data_complete_cb_t data_complete_cb)
-{
-    usb.ep0_class_request_handler = setup_cb != NULL?
-            setup_cb : usb_default_ep0_request_cb;
-    usb.ep0_class_data_complete = data_complete_cb != NULL?
-            data_complete_cb : usb_default_ep0_data_complete_cb;
-}
-
-void usb_set_vendor_req_handler(usb_crtl_setup_cb_t setup_cb,
+void usb_set_nonstd_req_handler(usb_crtl_setup_cb_t setup_cb,
                                 usb_ctrl_data_complete_cb_t data_complete_cb)
 {
-    usb.ep0_vendor_request_handler = setup_cb != NULL?
-            setup_cb : usb_default_ep0_request_cb;
-    usb.ep0_vendor_data_complete = data_complete_cb != NULL?
-            data_complete_cb : usb_default_ep0_data_complete_cb;
+    usb.ep0_nonstd_request_handler =
+        setup_cb != NULL ? setup_cb : usb_default_ep0_request_cb;
+    usb.ep0_nonstd_data_complete =
+        data_complete_cb != NULL? data_complete_cb : usb_default_ep0_data_complete_cb;
 }
 
 void usb_shutdown(void){

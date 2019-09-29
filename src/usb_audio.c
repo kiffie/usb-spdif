@@ -67,7 +67,7 @@ static void usb_audio_data_cb(unsigned ep, unsigned pid, void *buffer, unsigned 
 }
 
 
-static int usb_audio_class_cb(usb9_setup_data_t *sudata, void **inout_data){
+int usb_audio_class_handler(usb9_setup_data_t *sudata, void **inout_data){
 
     int xfer_len = -1;
     log_debug("Class request: bmRequestType=%02x, bRequest=%02x, "
@@ -112,7 +112,6 @@ static int usb_audio_class_cb(usb9_setup_data_t *sudata, void **inout_data){
 void usb_audio_init(void){
     usb_audio.mute = false;
     usb_audio.rx_callback = NULL;
-    usb_set_class_req_handler(usb_audio_class_cb, NULL);
     usb_init_endpoint(0x01, USB9_EPDESC_ATTR_TYPE_ISO, USB_AUDIO_ISO_EP_SIZE, usb_audio_data_cb);
     usb_arm_endpoint(0x01, usb_audio.audio_data[0], USB_AUDIO_ISO_EP_SIZE);
     usb_arm_endpoint(0x01, usb_audio.audio_data[1], USB_AUDIO_ISO_EP_SIZE);
