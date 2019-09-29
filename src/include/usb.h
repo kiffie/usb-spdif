@@ -51,7 +51,7 @@ void usb_shutdown(void);
 
 void usb_ctrl_data_confirm(bool stall);
 
-void usb_stall_endpoint(int ep, int is_in);
+void usb_stall_endpoint(int ep, bool is_in);
 
 /**
  * Initialize an endpoint. Needs to be called twice with different addresses for
@@ -68,10 +68,6 @@ void usb_init_endpoint(uint8_t ep_addr,
 
 
 bool usb_arm_endpoint(uint8_t ep_addr, void *data, unsigned data_len);
-
-//void usb_init_bulk(int ep, int ep_size, int in, int out,
-//                   usb_completion_cb_t handler);
-//int usb_arm_out(int ep, void *buffer);
 
 #ifdef USB_DISABLE_IRQ
 void usb_tasks(void);

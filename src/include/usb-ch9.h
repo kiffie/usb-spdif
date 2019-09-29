@@ -52,6 +52,9 @@
 #define USB9_EPDESC_ATTR_TYPE_BULK          2
 #define USB9_EPDESC_ATTR_TYPE_INTERRUPT     3
 
+/* USB LANGIDs */
+#define USB9_LANGID_EN_US                   0x0409
+
 typedef struct __attribute__ ((__packed__)) usb9_setup_data {
     uint8_t bmRequestType;
     uint8_t bRequest;

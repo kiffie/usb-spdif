@@ -50,9 +50,9 @@ static union {
 
 typedef struct usb_ep_info {
 
-    unsigned next_odd;      /* next BD to use is odd BD */
-    unsigned data01;        /* data toggle flag for next transaction */
-    unsigned stalled;
+    bool next_odd;          /* next BD to use is odd BD */
+    bool data01;            /* data toggle flag for next transaction */
+    bool stalled;
 
     unsigned ep_size;       /* max. transaction size */
     uint8_t bmAttributes;   /* currently used to store EP type */
@@ -131,7 +131,7 @@ void __ISR(_USB_1_VECTOR, IPL4SOFT) usb_irq( void )
         unsigned bdt_index= u1stat>>2;
         struct usb_buffer_descriptor *bd=  &usb_bdt.flat[bdt_index];
         int pid= (bd->flags & USB_BD_PID_MSK)>>USB_BD_PID_POS;
-        int data01 = bd->flags & USB_BD_DATA01 ? 1 : 0;
+        bool data01 = bd->flags & USB_BD_DATA01;
         log_verbose("!TRNIF U1STAT=%02x ep=%d, pid=%d, was_odd=%d, data01=%d, byte_count=%u\n",
                     u1stat, ep, pid, u1stat&_U1STAT_PPBI_MASK?1:0, data01,bd->byte_count);
         if( ep_info->ep_handler != NULL){
@@ -193,7 +193,7 @@ static usb_buffer_descriptor_t* get_buffer_desc(unsigned ep, bool is_in){
     return &usb_bdt.ep_dir_ppbi[ep][is_in][ppbi];
 }
 
-static int usb_arm_generic(int ep, bool is_in, void* data, int data_len, int stall){
+static int usb_arm_generic(int ep, bool is_in, void* data, unsigned data_len, bool stall){
 
     struct usb_ep_info *ep_info = &usb.ep_info[ep][is_in];
     volatile struct usb_buffer_descriptor *bd = get_buffer_desc(ep, is_in);
@@ -213,14 +213,14 @@ static int usb_arm_generic(int ep, bool is_in, void* data, int data_len, int sta
     }
     bool is_iso =
         (ep_info->bmAttributes & USB9_EPDESC_ATTR_TYPE_MASK) == USB9_EPDESC_ATTR_TYPE_ISO;
-    ep_info->ep_buf[ep_info->next_odd ? 1 : 0] = data;
+    ep_info->ep_buf[ep_info->next_odd] = data;
     bd->buffer_address= usb_virt_to_phys(data);
     bd->byte_count= data_len;
     bd->flags = USB_BD_UOWN
                | (ep_info->data01?USB_BD_DATA01:0)
                | (is_iso ? 0 : USB_BD_DTS)
                | (stall ? USB_BD_STALL : 0);
-    log_debug("armed: ep=%d, is_in=%d, is_odd=%d, data01=%d, data_len=%d, flags=%02x\n",
+    log_debug("armed: ep=%d, is_in=%u, is_odd=%u, data01=%u, data_len=%d, flags=%02x\n",
               ep, is_in, ep_info->next_odd,
               ep_info->data01, data_len, bd->flags);
     ep_info->next_odd = !ep_info->next_odd;
@@ -235,42 +235,42 @@ static int usb_arm_generic(int ep, bool is_in, void* data, int data_len, int sta
  * @returns returns true on success.
  */
 bool usb_arm_endpoint(uint8_t ep_addr, void *data, unsigned data_len){
-    int r = usb_arm_generic(ep_addr & 0x0f, ep_addr & 0x80, data, data_len, 0);
+    int r = usb_arm_generic(ep_addr & 0x0f, ep_addr & 0x80, data, data_len, false);
     return r == 0;
 }
 
 
 static int usb_arm_ep0out(void* data, int data_len){
-    return usb_arm_generic(0, 0, data, data_len, 0);
+    return usb_arm_generic(0, 0, data, data_len, false);
 }
 
 static int usb_arm_ep0in(void* data, int data_len){
-    return usb_arm_generic(0, 1, data, data_len, 0);
+    return usb_arm_generic(0, 1, data, data_len, false);
 }
 
-static void usb_set_data01(int ep, int is_in, unsigned data01){
+static void usb_set_data01(int ep, int is_in, bool data01){
     usb.ep_info[ep][is_in].data01 = data01;
 }
 
-void usb_stall_endpoint(int ep, int is_in){
+void usb_stall_endpoint(int ep, bool is_in){
 
     usb_ep_info_t *ep_info= &usb.ep_info[ep][is_in];
     volatile usb_buffer_descriptor_t *bd = get_buffer_desc(ep, is_in);
 
     if( ep_info->stalled ){
-        log_debug("EP%d: is_in=%d, odd=%d already stalled\n",
+        log_debug("EP%d: is_in=%u, odd=%u already stalled\n",
                     ep, is_in, ep_info->next_odd);
     }else{
         bd->flags = USB_BD_STALL|USB_BD_UOWN;
-        ep_info->stalled= 1;
-        log_debug("stalling EP%d: is_in=%d, next_odd=%d\n",
+        ep_info->stalled = 1;
+        log_debug("stalling EP%d: is_in=%u, next_odd=%u\n",
                   ep, is_in, ep_info->next_odd);
         //ep_info->rx_next_odd= ! ep_info->rx_next_odd;
     }
 }
 
 static void usb_stall_ep0(void){
-    usb_stall_endpoint(0, 1);
+    usb_stall_endpoint(0, true);
     usb_arm_generic(0, 0, &usb.ep0_setup, sizeof(usb.ep0_setup), 1);
 }
 
@@ -406,7 +406,6 @@ static void usb_ep0_arm_for_data_stage(bool is_in){
                 break;
             }
             usb.ep0_xfer_ndx += txlen;
-            //log_info("usb.ep0_xfer_ndx = %u\n", usb.ep0_xfer_ndx);
         }else { /* txlen == 0, i.e. xfer_len == xfer_ndx */
             /* Try to send an empty IN packet if the transfer is truncated and
              * the length of the last packet of the transfer corresponds to the
@@ -420,7 +419,6 @@ static void usb_ep0_arm_for_data_stage(bool is_in){
                 }
             }
             usb.ep0_xfer_ndx += 1; /* should now be equal to xfer_len + 1 */
-            //log_info("usb.ep0_xfer_ndx = %u\n", usb.ep0_xfer_ndx);
         }
     }
 }
