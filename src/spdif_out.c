@@ -33,15 +33,13 @@
 #endif
 
 typedef struct spdif_context {
-    unsigned tx_active:1;
-    
+    bool tx_active;
     spdif_frame_t spdif_buf[SPDIF_BUFLEN];
     unsigned tx_ptr;
     unsigned tx_ctr, tx_ctr_last; /* used to check if buffer insertions have stopped */
     unsigned tx_ctr_brm;
     unsigned bov_ctr; /* buffer overflow counter */
     timer_time_t next_buffer_check;
-    //timer_time_t next_staus_report;
     unsigned sampling_rate;
     int sampling_rate_adj;
     unsigned buflen_avg;
@@ -55,8 +53,29 @@ static inline unsigned int __attribute__((always_inline)) virt_to_phys(const voi
         return (int)p<0?((int)p&0x1fffffffL):(unsigned int)((unsigned char*)p+0x40000000L);
 }
 
-static inline void set_active_led(int active){
-    PORTBbits.RB4 = active;
+#define AUX_LED LATBbits.LATB3
+#define ACT_LED LATBbits.LATB4
+
+static void set_active_led(void){
+    if(spdif.tx_active){
+        switch(spdif.sampling_rate){
+            default:
+                ACT_LED = true;
+                AUX_LED = false;
+                break;
+            case 48000:
+                ACT_LED = false;
+                AUX_LED = true;
+                break;
+            case 96000:
+                ACT_LED = true;
+                AUX_LED = true;
+                break;
+        }
+    }else{
+        ACT_LED = false;
+        AUX_LED = false;
+    }
 }
 
 unsigned spdif_out_get_buflen(void){
@@ -74,10 +93,26 @@ unsigned spdif_out_get_buflen(void){
     return len;
 }
 
+static void spdif_out_calc_fsamp(unsigned n_frames){
+    unsigned fsamp;
+    if(n_frames < 46){
+        fsamp = 44100;
+    }else if(n_frames < 72){
+        fsamp = 48000;
+    }else{
+        fsamp = 96000;
+    }
+    if(fsamp != spdif.sampling_rate){
+        log_info("setting sampling rate to %u\n", fsamp);
+        spdif_out_set_rate(fsamp);
+    }
+}
+
 void spdif_out_tx_s16le(int16_t *frames, unsigned n_frames){
     int i;
     unsigned free;
     if(n_frames > 0){
+        spdif_out_calc_fsamp(n_frames);
         spdif.tx_ctr += n_frames;
         free =  SPDIF_BUFLEN - spdif_out_get_buflen();
         if( n_frames > free ){
@@ -101,6 +136,7 @@ void spdif_out_tx_s24le(int32_t *frames, unsigned n_frames){
     int i;
     unsigned free;
     if(n_frames > 0){
+        spdif_out_calc_fsamp(n_frames);
         spdif.tx_ctr += n_frames;
         free =  SPDIF_BUFLEN - spdif_out_get_buflen();
         if( n_frames > free ){
@@ -124,6 +160,7 @@ void spdif_out_tx_s24le_packed(uint8_t *frames, unsigned n_frames){
     int i;
     unsigned free;
     if(n_frames > 0){
+        spdif_out_calc_fsamp(n_frames);
         spdif.tx_ctr += n_frames;
         free =  SPDIF_BUFLEN - spdif_out_get_buflen();
         if( n_frames > free ){
@@ -174,6 +211,29 @@ int spdif_out_set_rate(unsigned frames_sec){
               _REFOCON_OE_MASK |
 #endif
               _REFOCON_ON_MASK;
+
+    /* set channel status information */
+    uint8_t ch_stat[] = {
+        SPDIF_CS0_NOT_COPYRIGHT,
+        SPDIF_CS1_DDCONV | SPDIF_CS1_ORIGINAL,
+        0,
+        0
+    };
+    switch(frames_sec){
+        case 44100:
+            ch_stat[3] = SPDIF_CS3_44100;
+            break;
+        case 48000:
+            ch_stat[3] = SPDIF_CS3_48000;
+            break;
+        case 96000:
+            ch_stat[3] = SPDIF_CS3_96000;
+            break;
+        default:
+            ch_stat[3] = SPDIF_CS3_UNSPEC;
+            break;
+    }
+    spdif_encoder_set_channel_status(&spdif.encoder, ch_stat, sizeof(ch_stat));
     return 0;
 }
 
@@ -262,7 +322,7 @@ void spdif_out_tasks(void){
 	spdif.sampling_rate_adj = 0;
 	spdif.buflen_avg = SPDIF_BUFLEN/2;
     }
-    set_active_led(spdif.tx_active);
+    set_active_led();
 }
 
 void spdif_out_init(void){
@@ -272,20 +332,7 @@ void spdif_out_init(void){
     spdif.bov_ctr = 0;
     spdif.next_buffer_check = 0;
     spdif_encoder_init(&spdif.encoder);
-    static const uint8_t ch_stat[] = {
-        SPDIF_CS0_NOT_COPYRIGHT,
-        SPDIF_CS1_DDCONV | SPDIF_CS1_ORIGINAL,
-        0,
-#if PCM_FSAMPLE == 48000
-        SPDIF_CS3_48000
-#elif PCM_FSAMPLE == 96000
-        SPDIF_CS3_96000
-#else
-#error "invalid sampling rate"
-#endif
-    };
-    spdif_encoder_set_channel_status(&spdif.encoder, ch_stat, sizeof(ch_stat));
-    spdif_out_set_rate(PCM_FSAMPLE);
+    spdif_out_set_rate(44100);
     /* initialize SPI2 */
 #ifdef __32MX470F512H__
     RPD3R = 0b0110; /* map SDO2 to RPD3 */

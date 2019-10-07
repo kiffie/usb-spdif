@@ -41,7 +41,7 @@ static const struct usb9_device_descriptor usb_device_desc = {
     .idProduct= 1,
     .bcdDevice= 0,
     .iManufacturer= 0,
-    .iProduct= 0,
+    .iProduct= 1,
     .iSerialNumber= 0,
     .bNumConfigurations= 1
 };
@@ -50,7 +50,7 @@ static const struct usb9_device_descriptor usb_device_desc = {
 #define AUDIO_STREAMING_INTERFACE_ID 0x01
 #define HID_INTERFACE_ID 0x02
 
-#define USB_CONFIG_DESC_LEN 134
+#define USB_CONFIG_DESC_LEN 140
 
 static const uint8_t usb_config_desc[USB_CONFIG_DESC_LEN] = {
     0x09,                               // bLength
@@ -110,7 +110,7 @@ static const uint8_t usb_config_desc[USB_CONFIG_DESC_LEN] = {
     0x24,                               // bDescriptorType: CS_INTERFACE
     0x03,                               // bDescriptorSubtype: OUTPUT_TERMINAL
     ID_OUTPUT_TERMINAL,                 // bTerminalID
-    0x01, 0x03,                         // wTerminalType
+    0x05, 0x06,                         // wTerminalType
     0x00,                               // bAssocTerminal
     ID_FEATURE_UNIT,                    // bSourceID
     0x00,                               // iTerminal
@@ -146,7 +146,7 @@ static const uint8_t usb_config_desc[USB_CONFIG_DESC_LEN] = {
     0x01,0x00,                          // wFormatTag: PCM
 
     /*  Type 1 Format Type Descriptor */
-    0x0B,                               // bLength
+    17,                                 // bLength
     0x24,                               // bDescriptorType: CS_INTERFACE
     0x02,                               // bDescriptorSubtype: FORMAT_TYPE
     0x01,                               // bFormatType: FORMAT_TYPE_1
@@ -159,10 +159,16 @@ static const uint8_t usb_config_desc[USB_CONFIG_DESC_LEN] = {
 #else
 #   error "invalid subframe size"
 #endif
-    0x01,                               // bSamFreqType
-    BYTE0(PCM_FSAMPLE),                 // tSamFreq
-    BYTE1(PCM_FSAMPLE),
-    BYTE2(PCM_FSAMPLE),
+    3,                                  // bSamFreqType
+    BYTE0(44100),                       // tSamFreq
+    BYTE1(44100),
+    BYTE2(44100),
+    BYTE0(48000),                       // tSamFreq
+    BYTE1(48000),
+    BYTE2(48000),
+    BYTE0(96000),                       // tSamFreq
+    BYTE1(96000),
+    BYTE2(96000),
 
     /*  Standard Endpoint Descriptor */
     0x09,                               // bLength
@@ -215,11 +221,24 @@ static const uint8_t usb_config_desc[USB_CONFIG_DESC_LEN] = {
 /* This must be adapted when configuration descriptor is changed */
 #define HID_DESC_NDX (sizeof(usb_config_desc) - 7 - 9)
 
+static const uint16_t usb_string_desc_0[] = {
+    USB9_DESC_STRING_HEADER(1),
+    USB9_LANGID_EN_US
+};
+
+static const uint16_t usb_string_desc_1[] = {
+    USB9_DESC_STRING_HEADER(9),
+    'U', 'S', 'B', '_', 'S', 'P', 'D', 'I', 'F'
+};
+
+
 static const usb_desc_table_elem_t usb_desc_table[] = {
     { 0, USB9_DESC_DEVICE, 0, &usb_device_desc, sizeof(usb_device_desc) },
     { 0, USB9_DESC_CONFIGURATION, 0, usb_config_desc, sizeof(usb_config_desc) },
     { 0, USB9_DESC_HID, 0, &usb_config_desc[HID_DESC_NDX], 9 },
     { 0, USB9_DESC_HID_REPORT, HID_INTERFACE_ID, usb_hid_report_desc, sizeof(usb_hid_report_desc) },
+    { 0, USB9_DESC_STRING, 0, usb_string_desc_0, sizeof(usb_string_desc_0) },
+    { 1, USB9_DESC_STRING, USB9_LANGID_EN_US, usb_string_desc_1, sizeof(usb_string_desc_1) },
     { 0, 0, 0, NULL, 0 }
 };
 

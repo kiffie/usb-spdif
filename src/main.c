@@ -79,13 +79,12 @@ int main(void)
     RPF5R = 0b0001; /* U2TX for terminal (debug) output */
     CHECON = _CHECON_DCSZ_MASK | _CHECON_PREFEN_MASK | 1;
 #else
-    TRISBCLR = _TRISB_TRISB4_MASK; /* LED */
+    TRISBCLR = _TRISB_TRISB3_MASK | _TRISB_TRISB4_MASK; /* AUX LED, Act. LED */
     ANSELBCLR = _ANSELB_ANSB15_MASK; /* SCK2 */
     RPB0R= 0b0010; /* U2TX for terminal (debug) output */
     RPB2R = 0b0111; /* REFCLKO */
 #endif
     log_info("USB S/PDIF Interface\n");
-    log_info("Fixed sampling rate: %u Hz\n", PCM_FSAMPLE);
 #ifdef SPDIF_REFCLKWIRE
     log_info("Reference clock wire: required\n");
 #else
