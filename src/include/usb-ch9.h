@@ -1,5 +1,5 @@
 /*
- * macros and structures to implement USB Chapter 9
+ * macros and structures to implement USB Chapter 9 (and related stuff)
  */
 
 #ifndef __USB_CH9_H__
@@ -54,6 +54,8 @@
 
 /* USB LANGIDs */
 #define USB9_LANGID_EN_US                   0x0409
+
+#define USB9_DESC_STRING_HEADER(len) ((2+2*(len)) | (USB9_DESC_STRING<<8))
 
 typedef struct __attribute__ ((__packed__)) usb9_setup_data {
     uint8_t bmRequestType;
@@ -125,6 +127,18 @@ struct __attribute__ ((__packed__)) usb9_endpoint_descriptor {
     uint8_t bInterval;
 };
 
+/* HID descriptor for a single subordinate descriptor; additional pairs
+ * of bDescriptorType and wDescriptorLength can be appended */
+struct __attribute__ ((__packed__)) usb9_hid_descriptor {
+    uint8_t bLength;
+    uint8_t bDescriptorType;
+    uint16_t bcdHID;
+    uint8_t bCountryCode;
+    uint8_t bNumDescriptors;
+    uint8_t bDescriptorType2;
+    uint16_t wDescriptorLength2;
+};
+
 /*
  * needed for string descriptors
  */
@@ -134,4 +148,3 @@ struct __attribute__ ((__packed__)) usb9_descriptor_header {
 };
 
 #endif	/* USB_CH9_H */
-

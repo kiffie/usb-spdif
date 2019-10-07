@@ -85,10 +85,10 @@ typedef struct usb_context {
     unsigned ep0_xfer_ndx;
 
     uint8_t ep0_new_address;
-
+#ifndef USB_DISABLE_NONSTD_CTRL
     usb_crtl_setup_cb_t ep0_nonstd_request_handler;
     usb_ctrl_data_complete_cb_t ep0_nonstd_data_complete;
-
+#endif
 } usb_context_t;
 
 static usb_context_t usb;
@@ -373,6 +373,7 @@ void usb_ctrl_data_confirm(bool stall){
     usb_ei();
 }
 
+#ifndef USB_DISABLE_NONSTD_CTRL
 static int usb_default_ep0_request_cb(usb9_setup_data_t *setup_packet, void **inout_data){
     return -1;
 }
@@ -382,13 +383,18 @@ static void usb_default_ep0_data_complete_cb(bool canceled){
         usb_ctrl_data_confirm(0);
     }
 }
+#endif
 
 static void call_data_complete_handler(bool canceled){
+#ifndef USB_DISABLE_NONSTD_CTRL
     if(usb9_is_std_request(usb.ep0_setup.bmRequestType)){
         usb_ctrl_data_confirm(canceled);
     }else{
         usb.ep0_nonstd_data_complete(canceled);
     }
+#else
+    usb_ctrl_data_confirm(canceled);
+#endif
 }
 
 static void usb_ep0_arm_for_data_stage(bool is_in){
@@ -448,15 +454,19 @@ static void usb_ep0_handler(unsigned ep, unsigned pid, void* buffer, unsigned le
                       usb.ep0_setup.wValue,
                       usb.ep0_setup.wIndex,
                       usb.ep0_setup.wLength);
-            int xfer_len = -1;
+            int xfer_len;
             if(usb9_is_std_request(usb.ep0_setup.bmRequestType)){
                 xfer_len = usb_ep0_std_request_cb(
                         &usb.ep0_setup,
                         (const uint8_t **)&usb.ep0_xfer_buf);
             }else{
+#ifndef USB_DISABLE_NONSTD_CTRL
                 xfer_len = usb.ep0_nonstd_request_handler(
                         &usb.ep0_setup,
                         (void **)&usb.ep0_xfer_buf);
+#else
+                xfer_len = -1;
+#endif
             }
             bool stall = xfer_len < 0 || xfer_len > usb.ep0_setup.wLength;
             if(usb.ep0_setup.wLength > 0){ /* DATA phase present */
@@ -561,8 +571,10 @@ void usb_init_with_desc(const usb_desc_table_elem_t *desc_table)
     memset(&usb, sizeof(usb), 0);
     U1CON = 0; /* first turn USB off */
     usb.desc_table = desc_table;
+#ifndef USB_DISABLE_NONSTD_CTRL
     usb.ep0_nonstd_request_handler = usb_default_ep0_request_cb;
     usb.ep0_nonstd_data_complete = usb_default_ep0_data_complete_cb;
+#endif
 
     U1OTGCON = 0; /* turn off VUSB, disable special USB OTG functions */
     U1PWRC = _U1PWRC_USBPWR_MASK;
@@ -601,6 +613,7 @@ void usb_init_with_desc(const usb_desc_table_elem_t *desc_table)
     U1CON = _U1CON_USBEN_MASK;
 }
 
+#ifndef USB_DISABLE_NONSTD_CTRL
 void usb_set_nonstd_req_handler(usb_crtl_setup_cb_t setup_cb,
                                 usb_ctrl_data_complete_cb_t data_complete_cb)
 {
@@ -609,6 +622,7 @@ void usb_set_nonstd_req_handler(usb_crtl_setup_cb_t setup_cb,
     usb.ep0_nonstd_data_complete =
         data_complete_cb != NULL? data_complete_cb : usb_default_ep0_data_complete_cb;
 }
+#endif
 
 void usb_shutdown(void){
     U1PWRC = 0;

@@ -51,11 +51,13 @@
 #   define UxTXREG	U2TXREG
 #   define UxBRG	U2BRG
 #   define UxVECTOR     _UART_2_VECTOR
-#   if __PIC32_FEATURE_SET == 250 || __PIC32_FEATURE_SET == 270 || __PIC32_FEATURE_SET == 274 || __PIC32_FEATURE_SET == 470
-#       define UxIPC        IPC9bits.U2IP
-#       define UxTX_IFSCLR  IFS1CLR = _IFS1_U2TXIF_MASK
-#       define UxTXIE       IEC1SET = _IEC1_U2TXIE_MASK
-#       define UxTXDI       IEC1CLR = _IEC1_U2TXIE_MASK
+#   ifdef __PIC32MX
+#       if __PIC32_FEATURE_SET == 250 || __PIC32_FEATURE_SET == 270 || __PIC32_FEATURE_SET == 274 || __PIC32_FEATURE_SET == 470
+#           define UxIPC        IPC9bits.U2IP
+#           define UxTX_IFSCLR  IFS1CLR = _IFS1_U2TXIF_MASK
+#           define UxTXIE       IEC1SET = _IEC1_U2TXIE_MASK
+#           define UxTXDI       IEC1CLR = _IEC1_U2TXIE_MASK
+#       endif
 #   endif
 #else
 #   error "invalid UART number"

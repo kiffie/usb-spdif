@@ -1,4 +1,4 @@
-/* 
+/*
  * simple USB device implementation for PIC32MX
  */
 
@@ -44,8 +44,10 @@ void usb_init_with_desc(const usb_desc_table_elem_t *desc_table);
  */
 void usb_init(void);
 
+#ifndef USB_DISABLE_NONSTD_CTRL
 void usb_set_nonstd_req_handler(usb_crtl_setup_cb_t setup_cb,
                                 usb_ctrl_data_complete_cb_t data_complete_cb);
+#endif
 
 void usb_shutdown(void);
 
@@ -78,4 +80,3 @@ static inline void usb_tasks(void){}
 #endif
 
 #endif	/* USB_H */
-
