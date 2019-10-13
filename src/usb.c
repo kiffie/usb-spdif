@@ -567,8 +567,8 @@ static void usb_ep0_handler(unsigned ep, unsigned pid, void* buffer, unsigned le
 
 void usb_init_with_desc(const usb_desc_table_elem_t *desc_table)
 {
-    memset(&usb_bdt, sizeof(usb_bdt), 0);
-    memset(&usb, sizeof(usb), 0);
+    memset(&usb_bdt, 0, sizeof(usb_bdt));
+    memset(&usb, 0, sizeof(usb));
     U1CON = 0; /* first turn USB off */
     usb.desc_table = desc_table;
 #ifndef USB_DISABLE_NONSTD_CTRL
