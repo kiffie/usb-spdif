@@ -108,7 +108,9 @@ int main(void)
         if(bootloader_start){
             log_info("entering bootloader\n");
             timer_wait_ms(10); /* enough time to complete USB transfer */
+            usb_shutdown();
             term_flush();
+            timer_wait_ms(10);
             enter_bootlader();
         }
     }
@@ -176,5 +178,3 @@ void __attribute__((noinline, nomips16)) _general_exception_handler(void){
     RSWRST; /* read RSWRST */
     while(1);
 }
-
-
