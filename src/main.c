@@ -94,6 +94,10 @@ int main(void)
     log_debug("BMXCON = %08x\n", BMXCON);
     log_debug("CHECON = %08x\n", CHECON);
 #endif
+    /* activate LEDs for a second */
+    SPDIF_OUT_ACT_LED = true;
+    SPDIF_OUT_AUX_LED = true;
+    timer_wait_ms(1000);
     spdif_out_init();
     usb_init();
     irhid_init();

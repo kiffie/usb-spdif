@@ -13,6 +13,10 @@
  */
 #define SPDIF_REFCLKWIRE
 
+/* LEDs */
+#define SPDIF_OUT_AUX_LED LATBbits.LATB3
+#define SPDIF_OUT_ACT_LED LATBbits.LATB4
+
 void spdif_out_init(void);
 void spdif_out_tx_s16le(int16_t *frames, unsigned n_frames);
 void spdif_out_tx_s24le(int32_t *frames, unsigned n_frames);

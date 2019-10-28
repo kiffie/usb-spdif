@@ -53,28 +53,25 @@ static inline unsigned int __attribute__((always_inline)) virt_to_phys(const voi
         return (int)p<0?((int)p&0x1fffffffL):(unsigned int)((unsigned char*)p+0x40000000L);
 }
 
-#define AUX_LED LATBbits.LATB3
-#define ACT_LED LATBbits.LATB4
-
 static void set_active_led(void){
     if(spdif.tx_active){
         switch(spdif.sampling_rate){
             default:
-                ACT_LED = true;
-                AUX_LED = false;
+                SPDIF_OUT_ACT_LED = true;
+                SPDIF_OUT_AUX_LED = false;
                 break;
             case 48000:
-                ACT_LED = false;
-                AUX_LED = true;
+                SPDIF_OUT_ACT_LED = false;
+                SPDIF_OUT_AUX_LED = true;
                 break;
             case 96000:
-                ACT_LED = true;
-                AUX_LED = true;
+                SPDIF_OUT_ACT_LED = true;
+                SPDIF_OUT_AUX_LED = true;
                 break;
         }
     }else{
-        ACT_LED = false;
-        AUX_LED = false;
+        SPDIF_OUT_ACT_LED = false;
+        SPDIF_OUT_AUX_LED = false;
     }
 }
 
