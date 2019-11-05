@@ -133,7 +133,7 @@ struct __attribute__ ((__packed__)) usb9_endpoint_descriptor {
 };
 
 /* HID descriptor for a single subordinate descriptor; additional pairs
- * of bDescriptorType and wDescriptorLength can be appended */
+ * of bDescriptorType2 and wDescriptorLength2 can be appended */
 struct __attribute__ ((__packed__)) usb9_hid_descriptor {
     uint8_t bLength;
     uint8_t bDescriptorType;
