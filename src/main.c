@@ -1,5 +1,10 @@
 /*
  * USB spdif --- Audio S/PDIF interface
+ *
+ * Copyright (C) 2019 Kiffie
+ *
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ *
  */
 
 #include <xc.h>

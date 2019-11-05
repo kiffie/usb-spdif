@@ -1,6 +1,11 @@
 /*
  * irhid.c --- USB HID remote control keyboard
  *             uses TIMER2
+ *
+ * Copyright (C) 2019 Kiffie
+ *
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ *
  */
 
 #include <irhid.h>
@@ -48,6 +53,14 @@ static const irhid_keymap_t irhid_keymap[] = {
     {5, 12884, 8203, 0x00b7 },    /* Stop */
     {5, 12884, 8204, 0x00b5 },    /* Next Track */
     {5, 12884, 8205, 0x00b6 },    /* Previous Track */
+
+    {5, 12884, 8246, 0x0040 },    /* Menu */
+    {5, 12884, 8228, 0x0041 },    /* Menu Pick */
+    {5, 12884, 8224, 0x0042 },    /* Menu Up */
+    {5, 12884, 8225, 0x0043 },    /* Menu Down */
+    {5, 12884, 8226, 0x0044 },    /* Menu Left */
+    {5, 12884, 8227, 0x0045 },    /* Menu Right */
+    {5, 12884, 8247, 0x0046 },    /* Menu Escape ("Mode" button on RC-1173) */
 
     /* End marker */
     {0xff, 0, 0, 0}

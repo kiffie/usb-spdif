@@ -1,5 +1,10 @@
 /*
  * simple USB device implementation for PIC32MX
+ *
+ * Copyright (C) 2019 Kiffie
+ *
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ *
  */
 
 #ifndef __USB_H__

@@ -1,5 +1,10 @@
 /*
  * configuration registers
+ *
+ * Copyright (C) 2019 Kiffie
+ *
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ *
  */
 
 #if defined( __32MX250F128B__) || defined(__32MX270F256B__) || defined(__32MX270F256D__) || defined(__32MX470F512H__) || defined(__32MX274F256B__)

@@ -1,6 +1,11 @@
 /*
  * irhid  --- USB HID remote control keyboard
  *            uses TIMER2
+ *
+ * Copyright (C) 2019 Kiffie
+ *
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ *
  */
 
 #ifndef __IRHID_H__

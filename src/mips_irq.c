@@ -1,5 +1,10 @@
 /*
  * helper functions for IRQ control and handling
+ *
+ * Copyright (C) 2019 Kiffie
+ *
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ *
  */
 
 #include <mips_irq.h>

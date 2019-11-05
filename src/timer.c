@@ -1,6 +1,10 @@
 /*
  * timer.c --- timer for MIPS using CP0 counter register
  *
+ * Copyright (C) 2019 Kiffie
+ *
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ *
  */
 
 #include <timer.h>

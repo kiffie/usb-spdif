@@ -1,5 +1,10 @@
 /*
  * macros and structures to implement USB Chapter 9 (and related stuff)
+ *
+ * Copyright (C) 2019 Kiffie
+ *
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ *
  */
 
 #ifndef __USB_CH9_H__

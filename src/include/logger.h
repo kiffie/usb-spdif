@@ -1,9 +1,13 @@
 /*
  * logger.h
  * very simple logging functions
- * version for PIC32MX using term_printf
  *
  * needs basename(), the prototype of which is defined in this file
+ *
+ * Copyright (C) 2019 Kiffie
+ *
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ *
  */
 
 #ifndef __LOGGER_H__

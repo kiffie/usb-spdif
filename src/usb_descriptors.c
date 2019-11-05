@@ -3,6 +3,11 @@
  *
  * also contains usb_init(), which initializes the USB device with these
  * descriptors
+ *
+ * Copyright (C) 2019 Kiffie
+ *
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ *
  */
 
 #include <usb_audio.h>

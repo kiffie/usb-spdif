@@ -1,5 +1,10 @@
 /*
  * usb_audio --- USB audio output
+ *
+ * Copyright (C) 2019 Kiffie
+ *
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ *
  */
 
 #ifndef __USB_AUDIO_H__
