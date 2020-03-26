@@ -547,7 +547,7 @@ static void usb_ep0_handler(unsigned ep, unsigned pid, void* buffer, unsigned le
                         usb_ep0_arm_for_data_stage(false);
                     }else{
                         usb.ep0_state = USB_CS_WCONF;
-                        call_data_complete_handler(0);
+                        call_data_complete_handler(false);
                     }
                     break;
 
