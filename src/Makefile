@@ -19,7 +19,7 @@ CFLAGS = -Wall -g -mprocessor=$(PROC) -O2 -DSYS_CLOCK=48000000 -DI2C_X=1 \
 
 
 LDFLAGS = $(CFLAGS) -Wl,-Map=$(PRG).map,--memorysummary,$(PRG).mem,--defsym=_min_heap_size=4096
-#LDFLAGS += -Wl,--script=app_32MX270F256B.ld
+LDFLAGS_APP := -Wl,--script=app_32MX270F256B.ld
 
 OBJECTS = main.o pic32_config.o spdif_out.o spdif-encoder.o \
           mips_irq.o terminal.o tinyprintf.o timer.o \
@@ -31,7 +31,7 @@ VPATH = irmp
 DEPS    = $(patsubst %.o, %.d, $(notdir $(OBJECTS)))
 
 .PHONY: all
-all: $(PRG).hex lst
+all: $(PRG).hex $(PRG)_app.hex lst
 
 %.o: %.c
 	$(CC) -c $(CFLAGS) -MMD -o $@ $<
@@ -46,10 +46,16 @@ $(PRG).elf: $(OBJECTS)
 $(PRG).hex: $(PRG).elf
 	$(BIN2HEX) $<
 
+$(PRG)_app.elf: $(OBJECTS)
+	$(CC) $(LDFLAGS) $(LDFLAGS_APP) -o $@ $^
+
+$(PRG)_app.hex: $(PRG)_app.elf
+	$(BIN2HEX) $<
+
 lst: $(PRG).lst
 
 clean:
-	rm -f $(OBJECTS) $(DEPS) $(PRG).elf \
+	rm -f $(OBJECTS) $(DEPS) $(PRG).elf $(PRG)_app.elf \
 	      $(PRG).map $(PRG).map $(PRG).lst $(PRG).mem
 
 -include $(DEPS)
